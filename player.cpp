@@ -1,0 +1,120 @@
+#include <c64/joystick.h>
+#include <c64/sprites.h>
+#include "player.h"
+#include "display.h"
+
+int shipx, shipy;
+char shots, shotd;
+
+__striped struct Shot	shot[4];
+
+void player_init(void)
+{
+	shipx = 160;
+	shipy = 200;
+}
+
+void player_move(void)
+{
+	joy_poll(0);
+	shipx += 2 * joyx[0];
+	if (joyy[0] < 0)
+		shipy -= 3;
+	else if (joyy[0] > 0)
+		shipy += 3;
+
+	if (shipx < 48)
+		shipx = 48;
+	else if (shipx > 500)
+		shipx = 500;
+
+	char	scx0 = (shipx - 24) >> 3;
+	char	scx1 = (shipx - 20) >> 3;
+
+	char	ssy = 39 + (phase & 7);
+	char	scy = (shipy - ssy) >> 3;
+
+	char * scl0 = tilerows[(screeny + scy + 0) & 31];
+	char * scl1 = tilerows[(screeny + scy + 1) & 31];
+	char * scl2 = tilerows[(screeny + scy + 2) & 31];
+
+	if (LevelAttr[scl2[scx0 + 1]] >= 0x90 || LevelAttr[scl2[scx1 + 1]] >= 0x90)
+		shipy -= 3;
+
+	if (LevelAttr[scl0[scx0 + 1]] >= 0x90 || LevelAttr[scl0[scx1 + 1]] >= 0x90)
+	{
+		shipy = scy * 8 + (phase & 7) + 46;
+		scl0 = scl1;
+		scl1 = scl2;
+	}
+
+	if (shipy > 232)
+		shipy = 232;
+	else if (shipy < 60)
+		shipy = 60;
+
+	if (LevelAttr[scl0[scx0]] >= 0x90 || LevelAttr[scl1[scx1]] >= 0x90)
+	{
+		shipx += 2;
+	}
+
+	if (LevelAttr[scl0[scx1 + 2]] >= 0x90 || LevelAttr[scl1[scx1 + 2]] >= 0x90)
+	{
+		shipx -= 2;
+	}
+
+	vspr_move(0, shipx - vscreenx, shipy);
+	vspr_image(0, 65 + joyx[0]);
+
+	for(char i=0; i<4; i++)
+	{
+		char shy = shot[i].y;
+		if (shy != 0)
+		{
+			if (shy >= ssy)
+			{
+				char	sy = (char)(shy - ssy) >> 3;
+				char	sx = (char)((char)(shot[i].x >> 1) - 10) >> 2;
+
+				char * scl0 = tilerows[(screeny + sy + 0) & 31];
+				char la = LevelAttr[scl0[sx]];
+				if (la >= 0xa0)
+				{
+					if (la == 0xb0 && sy > 3)
+						tile_remove(sx, sy);
+
+					shy = 0;
+					vspr_hide(i + 1);
+				}
+			}
+
+			if (shy != 0)
+			{
+				shy -= 4;
+
+				if (shy < 20)
+				{
+					shy = 0;
+					vspr_hide(i + 1);
+				}
+				else
+					vspr_move(i + 1, shot[i].x - vscreenx, shot[i].y);
+			}
+
+			shot[i].y = shy;
+		}
+	}
+
+	if (shotd > 0)
+		shotd--;
+	else if (shot[shots].y == 0 && joyb[0])
+	{
+		shot[shots].y = shipy - 16;
+		shot[shots].x = shipx;
+
+		vspr_set(shots + 1, shot[shots].x - vscreenx, shot[shots].y, 67, VCOL_YELLOW);
+		shots = (shots + 1) & 3;
+		shotd = 8;
+	}
+
+}
