@@ -109,12 +109,15 @@ void player_move(void)
 		shotd--;
 	else if (shot[shots].y == 0 && joyb[0])
 	{
-		shot[shots].y = shipy - 16;
+		shot[shots].y = shipy - 8;
 		shot[shots].x = shipx;
 
 		vspr_set(shots + 1, shot[shots].x - vscreenx, shot[shots].y, 67, VCOL_YELLOW);
 		shots = (shots + 1) & 3;
-		shotd = 8;
+		if (joyy[0] < 0)
+			shotd = 16;
+		else
+			shotd = 8;
 	}
 
 }
