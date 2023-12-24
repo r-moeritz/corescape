@@ -27,6 +27,8 @@ extern int vscreenx;
 
 void display_init(void);
 
+void level_init(void);
+
 void rebuild_screen(char phase);
 
 void display_loop(void);

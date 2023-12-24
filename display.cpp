@@ -11,6 +11,8 @@
 #include "player.h"
 #include "enemies.h"
 
+#define TIME_DEBUG	0
+
 
 // The charpad resource in lz compression, without the need
 // for binary export
@@ -47,13 +49,13 @@ __striped char * const tilerows[32 + 4] = {
 #for(i,36) tile_buffer[i & 31],
 };
 
-static const char LevelSequence[128] = {
+static const char LevelSequence[256] = {
 	0, 1, 2, 3,
 	10, 11, 12, 13, 
 	14, 15, 2, 3,
 	
 	7, 8, 9, 3,
-	10, 11, 12, 13, 
+	10, 11, 60, 13, 
 	14, 15, 2, 3,
 
 	16, 17, 18, 19,
@@ -67,29 +69,70 @@ static const char LevelSequence[128] = {
 	16, 28, 21, 3,
 	0, 1, 2, 16,
 	28, 21, 2, 3,
-	0, 1, 2, 3,
 
-	0, 1, 2, 3,
+	49, 50, 51, 52,
+	53, 54, 55, 3,
+
 	0, 1, 2, 3,
 
 	29, 30, 31, 32,
 	33, 34, 35, 3,
-	0, 1, 2, 3,
-	0, 1, 2, 3,
 
 	0, 1, 2, 3,
 	4, 37, 37, 38,
 	39, 39, 39, 39,
 	39, 40, 41, 9,
 
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-
+	56, 1, 2, 3,
+	56, 1, 2, 3,
 
 	36, 36, 36, 36,
 	36, 36, 36, 36,
+	0, 1, 2, 44,
+	45, 46, 47, 48,
 	0, 1, 2, 3,
 	0, 1, 2, 3,
+
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	0, 1, 2, 3,
+	0, 1, 2, 16,
+	
+	17, 59, 19, 61,
+	17, 61, 59, 20,
+	17, 61, 19, 20,
+	21, 1, 2, 16,
+	
+	17, 61, 59, 61,
+	17, 59, 19, 20,
+	21, 1, 2, 3,
+	7, 8, 58, 8,
+	
+	9, 1, 2, 3,
+	4, 5, 57, 5,
+	6, 1, 2, 3,
+	0, 1, 2, 3,
+	
 };
 
 void copy_screen_rows3(char * sp, char sx, char sy)
@@ -131,7 +174,7 @@ void copy_screen_rows4(char * sp, char sx, char sy)
 void expand_tiles(char sy, char ry, char dy)
 {
 	// Get source tile row
-	const char * sp = LevelMap + 16 * LevelSequence[sy & 127];
+	const char * sp = LevelMap + 16 * LevelSequence[sy];
 
 	// Get target tile buffer pointers
 	char * dp = tilerows[dy + ry];
@@ -226,7 +269,7 @@ void display_init(void)
 	memset(Screen1, 0, 1000);
 
 	// Background and border colors
-	vic.color_border = VCOL_LT_BLUE;
+	vic.color_border = VCOL_BLUE;
 	vic.color_back = VCOL_LT_BLUE;
 	vic.color_back1 = VCOL_BLACK;
 	vic.color_back2 = VCOL_LT_GREY;
@@ -242,7 +285,6 @@ void display_init(void)
 	vic.spr_multi = 0xff;
 
 	vspr_init(Screen0);
-	vspr_set(0, shipx, shipy, 65, VCOL_ORANGE);
 
 	// We have two sets of background 2x2 chars, one with and
 	// one without shadows
@@ -271,15 +313,6 @@ void display_init(void)
 
 	memset(Charset + 64, 0x55, 128);
 
-	levely = 0;
-	for(char i=0; i<8; i++)
-	{
-		levely--;
-		expand_tiles(levely, 0, ((levely - 1) & 7) * 4);
-		expand_tiles(levely, 1, ((levely - 1) & 7) * 4);
-		expand_tiles(levely, 2, ((levely - 1) & 7) * 4);
-		expand_tiles(levely, 3, ((levely - 1) & 7) * 4);
-	}
 
 	for(char i=0; i<8; i++)
 		vspr_set(i + 8, 10, 10, 68, 4 + i);
@@ -297,6 +330,29 @@ signed char ndx = 0;
 char	starp[4];
 signed char dx = 0;
 
+void level_init(void)
+{
+	levely = 0;
+	screeny = 0;
+
+	for(char i=0; i<8; i++)
+	{
+		levely--;
+		expand_tiles(levely, 0, ((levely - 1) & 7) * 4);
+		expand_tiles(levely, 1, ((levely - 1) & 7) * 4);
+		expand_tiles(levely, 2, ((levely - 1) & 7) * 4);
+		expand_tiles(levely, 3, ((levely - 1) & 7) * 4);
+	}
+	px = 4;
+	dx = 0;
+	ndx = 0;
+	vscreenx = 96;
+	pscreenx = screenx = 12;
+
+	for(char i=0; i<8; i++)
+		rebuild_screen(i);
+	phase = 7;
+}
 
 void display_loop(void)
 {
@@ -325,9 +381,13 @@ void display_loop(void)
 			px = (px & ~7) | 3;
 	}
 
+#if TIME_DEBUG
 	vic.color_border = VCOL_BLACK;
+#endif
 	vspr_sort();
+#if TIME_DEBUG
 	vic.color_border = VCOL_LT_BLUE;
+#endif
 
 	music_play();
 
@@ -343,13 +403,34 @@ void display_loop(void)
 
 		if (!(screeny & 3))
 		{
-			const char * rt = LevelMap + 16 * LevelSequence[levely & 127];
+			const char * rt = LevelMap + 16 * LevelSequence[levely];
 
+			char si = 0;
 			for(char i=0; i<16; i++)
 			{
-				if (rt[i] == 20)
-					enemies_add(32 + 32 * i, 14, ET_GUN);
+				switch (rt[i])
+				{
+				case 20:
+					enemies_add(32 + 32 * i, 14, ET_GUN, 0, 0);
+					break;
+				case 26:
+					enemies_add(32 + 32 * i, 40, ET_EVDOOR, 0, 0);
+					break;
+				case 28:
+					si = i;
+					break;
+				case 29:
+					enemies_add(64 + 32 * si, 14, ET_PINGPONG, 64 + 32 * si, 4 + 32 * i);
+					break;
+				}
 			}
+
+			if ((levely & 31) == 16)
+			{
+				enemies_add(256, 14, ET_UFO, 0, 0);				
+				enemies_add(256, 14, ET_UFO, 0, 0);
+			}
+
 		}
 	}
 
@@ -399,9 +480,13 @@ void display_loop(void)
 
 	music_play();
 
+#if TIME_DEBUG
 	vic.color_border = VCOL_WHITE;
+#endif
 	rebuild_screen(phase);
+#if TIME_DEBUG
 	vic.color_border = VCOL_LT_BLUE;
+#endif
 
 	vscreenx -= dx;
 	if (dx < 0)
@@ -415,7 +500,7 @@ void tile_remove(char x, char y)
 {
 	char sy = (y >> 2) + levely + 1, sx = x >> 2;
 
-	char ti = LevelMap[16 * LevelSequence[sy & 127] + sx];
+	char ti = LevelMap[16 * LevelSequence[sy] + sx];
 
 	if (ti == 22)
 		ti = 0;
@@ -425,6 +510,8 @@ void tile_remove(char x, char y)
 		ti = 10;
 	else if (ti == 24)
 		ti = 8;
+	else if (ti == 25)
+		ti = 14;
 	else
 		return;
 
@@ -440,19 +527,57 @@ void tile_remove(char x, char y)
 	if ((phase & 7) == 7)
 		scy++;
 
-	char * sp0 = screen0 + 40 * ((y - scy - 1) & 31) + (x - pscreenx);
-	char * sp1 = screen1 + 40 * ((y - scy) & 31) + (x - screenx);
-
 	for(char i=0; i<4; i++)
 	{
 		char * scl = tilerows[(y + i) & 31];
-		sp0[0] = 255; sp1[0] = scl[x + 0] = tp[0];
-		sp0[1] = 255; sp1[1] = scl[x + 1] = tp[1];
-		sp0[2] = 255; sp1[2] = scl[x + 2] = tp[2];
-		sp0[3] = 255; sp1[3] = scl[x + 3] = tp[3];
+		scl[x + 0] = tp[0];
+		scl[x + 1] = tp[1];
+		scl[x + 2] = tp[2];
+		scl[x + 3] = tp[3];
 		
 		tp += 4;
-		sp0 += 40;
-		sp1 += 40;
+	}
+
+	char y1 = (y - scy) & 31;
+	char n = 4;
+	if (y1 > 28)
+	{
+		n = y1 & 3;
+		y1 = 0;
+	}
+
+	if (y1 < 25)
+	{
+		char * sp = screen1 + 40 * y1 + (x - screenx);
+
+		for(char i=0; i<n; i++)
+		{
+			char * scl = tilerows[(y1 + scy + i) & 31];
+			sp[0] = scl[x + 0];
+			sp[1] = scl[x + 1];
+			sp[2] = scl[x + 2];
+			sp[3] = scl[x + 3];
+			sp += 40;
+		}
+
+		char y0 = (y - scy - 1) & 31;
+		n = 4;
+		if (y0 > 28)
+		{
+			n = y0 & 3;
+			y0 = 0;
+		}
+		if (y0 < 25)
+		{
+			sp = screen0 + 40 * y0 + (x - pscreenx);
+			for(char i=0; i<n; i++)
+			{
+				sp[0] = 0xff;
+				sp[1] = 0xff;
+				sp[2] = 0xff;
+				sp[3] = 0xff;
+				sp += 40;
+			}
+		}
 	}
 }

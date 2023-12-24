@@ -1,5 +1,16 @@
 #pragma once
 
+enum PlayerState
+{
+	PLST_IDLE,
+	PLST_ENTERING,
+	PLST_ACTIVE,
+	PLST_EXPLODING,
+	PLST_DESTROYED
+};
+
+extern PlayerState	playerState;
+extern char			playerStateCount;
 
 extern int shipx, shipy;
 extern char shots, shotd;
