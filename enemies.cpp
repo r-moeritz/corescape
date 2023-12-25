@@ -70,6 +70,12 @@ void enemies_add(int x, int y, EnemyType type, int p0, int p1)
 		vspr_set(i + 8, x, y, 112, VCOL_ORANGE);
 		e->vx = 5;
 		break;
+	case ET_LEFTGUARD:
+		vspr_set(i + 8, x, y, 73, i + 2);
+		break;
+	case ET_RIGHTGUARD:
+		vspr_set(i + 8, x, y, 74, i + 2);
+		break;
 	}
 }
 
@@ -103,7 +109,7 @@ void enemies_check(void)
 		char	i = ei & 7;
 		auto	e = enemies + i;
 
-		if (e->type == ET_UFO || e->type == ET_GUN)
+		if (e->type == ET_UFO || e->type == ET_GUN || e->type == ET_LEFTGUARD || e->type == ET_RIGHTGUARD)
 		{
 			for(char j=0; j<4; j++)
 			{
@@ -131,11 +137,12 @@ void enemies_check(void)
 
 void bullet_add(int x, int y, int dx, int dy)
 {
-	if ((char)(bulls + 8) != bulle)
+	if (bulld == 0 && (char)(bulls + 8) != bulle)
 	{
 		char j = bulle & 7;
 		char k = phase & 7;
 		bulle++;
+		bulld = 8;
 
 		bullet[j].x = x << 4;
 		bullet[j].y = y << 4;
@@ -150,6 +157,9 @@ static const char BulletColors[] =
 
 void enemies_move(void)
 {
+	if (bulld > 0)
+		bulld--;
+
 	for(char ei=enemys; ei!=enemye; ei++)
 	{
 		char	i = ei & 7;
@@ -199,6 +209,37 @@ void enemies_move(void)
 				vspr_move(i + 8, e->x - vscreenx, e->y);
 			}
 			break;			
+		case ET_LEFTGUARD:
+			e->y++;
+
+			if (e->y > 250)
+			{
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+			}
+			else
+			{
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+				if ((e->y & 15) == 8)
+					bullet_add(e->x + 8, e->y + 8, 32, 48);				
+			}
+			break;
+		case ET_RIGHTGUARD:
+			e->y++;
+
+			if (e->y > 250)
+			{
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+			}
+			else
+			{
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+				if ((e->y & 15) == 0)
+					bullet_add(e->x + 16, e->y + 8, -32, 48);				
+			}
+			break;
+
 		case ET_EVDOOR:
 			e->phase++;
 			e->y++;

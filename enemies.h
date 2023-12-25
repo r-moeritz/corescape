@@ -15,7 +15,9 @@ enum EnemyType
 	ET_UFO,
 	ET_GUN,
 	ET_EVDOOR,
-	ET_PINGPONG
+	ET_PINGPONG,
+	ET_LEFTGUARD,
+	ET_RIGHTGUARD
 };
 
 extern __striped struct Enemy

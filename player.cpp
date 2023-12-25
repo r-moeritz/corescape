@@ -10,7 +10,7 @@ __striped struct Shot	shot[4];
 
 void player_init(void)
 {
-	shipx = 256;
+	shipx = 272;
 	shipy = 200;
 
 	playerState = PLST_ENTERING;

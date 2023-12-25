@@ -19,7 +19,8 @@ extern char tile_buffer[32][64];
 
 extern __striped char * const tilerows[32 + 4];
 
-extern char screenx, screeny, levely;
+extern unsigned levely;
+extern char screenx, screeny;
 extern char screeni;
 extern char LevelScrollFont[4][2][2][32];
 extern char phase;

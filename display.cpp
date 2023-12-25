@@ -49,6 +49,77 @@ __striped char * const tilerows[32 + 4] = {
 #for(i,36) tile_buffer[i & 31],
 };
 
+char tile_cache[8][16];
+
+static const char LevelSequence[] = {
+	0, 0, 11, 11, 25, 41, 42, 0, 0, 54, 0, 53, 47, 51, 48, 49, 
+	51, 50, 51, 52, 0, 46, 45, 5, 44, 6, 7, 43, 8, 42, 41, 39, 
+	40, 0, 37, 38, 35, 36, 0, 33, 34, 31, 32, 27, 28, 29, 30, 21, 
+	24, 12, 13, 25, 26, 14, 15, 24, 21, 22, 23, 21, 19, 20, 21, 12, 
+	13, 14, 15, 0, 11, 7, 8, 11, 56, 57, 5, 55, 4, 0, 1, 2, 
+};
+
+static const char LevelRows[] = {
+	0, 1, 2, 3, 
+	112, 113, 114, 115, 
+	116, 113, 117, 118, 
+	0, 4, 5, 6, 
+	0, 7, 8, 9, 
+	0, 10, 11, 12, 
+	13, 14, 15, 3, 
+	0, 16, 17, 18, 
+	19, 20, 21, 3, 
+	0, 22, 23, 24, 
+	25, 26, 27, 3, 
+	36, 36, 36, 36, 
+	0, 1, 92, 93, 
+	94, 95, 96, 97, 
+	98, 99, 100, 101, 
+	102, 103, 2, 3, 
+	0, 80, 85, 86, 
+	87, 88, 89, 90, 
+	91, 84, 2, 3, 
+	0, 80, 119, 81, 
+	82, 83, 119, 84, 
+	0, 56, 2, 3, 
+	0, 49, 50, 51, 
+	52, 53, 54, 55, 
+	0, 16, 28, 21, 
+	0, 1, 75, 76, 
+	77, 78, 79, 3, 
+	44, 104, 105, 106, 
+	107, 108, 109, 110, 
+	111, 104, 105, 106, 
+	107, 120, 2, 3, 
+	0, 44, 72, 73, 
+	74, 48, 2, 3, 
+	0, 44, 45, 46, 
+	47, 48, 2, 3, 
+	0, 29, 30, 31, 
+	32, 33, 34, 35, 
+	4, 37, 38, 39, 
+	39, 40, 41, 9, 
+	7, 41, 121, 42, 
+	42, 43, 37, 6, 
+	0, 4, 57, 6, 
+	0, 7, 58, 9, 
+	19, 59, 61, 18, 
+	60, 14, 11, 60, 
+	0, 4, 62, 6, 
+	0, 7, 63, 9, 
+	0, 1, 80, 119, 
+	128, 129, 130, 140, 
+	131, 132, 133, 140, 
+	134, 135, 136, 140, 
+	137, 138, 139, 140, 
+	140, 84, 2, 3, 
+	141, 141, 141, 141, 
+	142, 142, 142, 142, 
+	13, 143, 144, 3, 
+	0, 69, 145, 146, 
+	147, 148, 48, 3, 
+};
+#if 0
 static const char LevelSequence[256] = {
 	0, 1, 2, 3,
 	10, 11, 12, 13, 
@@ -137,6 +208,7 @@ static const char LevelSequence[256] = {
 	0, 1, 2, 3,
 	0, 1, 2, 3,
 };
+#endif
 
 void copy_screen_rows3(char * sp, char sx, char sy)
 {
@@ -174,10 +246,10 @@ void copy_screen_rows4(char * sp, char sx, char sy)
 
 
 // Expand a row of tiles into tile buffer
-void expand_tiles(char sy, char ry, char dy)
+void expand_tiles(unsigned sy, char ry, char dy)
 {
 	// Get source tile row
-	const char * sp = LevelMap + 16 * LevelSequence[sy];
+	const char * sp = tile_cache[sy & 7];
 
 	// Get target tile buffer pointers
 	char * dp = tilerows[dy + ry];
@@ -200,7 +272,8 @@ void expand_tiles(char sy, char ry, char dy)
 	}
 }
 
-char screenx, screeny, levely, pscreenx;
+unsigned levely;
+char screenx, screeny, pscreenx;
 char screeni;
 
 void rebuild_screen(char phase)
@@ -211,7 +284,10 @@ void rebuild_screen(char phase)
 	{
 	case 7:
 		if (!(screeny & 3))
+		{
 			levely--;
+			memcpy(tile_cache[levely & 7], LevelMap + 16 * LevelRows[LevelSequence[levely >> 2] * 4 + (levely & 3)], 16);
+		}
 
 		expand_tiles(levely, screeny & 3, ((levely - 1) & 7) * 4);
 
@@ -335,12 +411,13 @@ signed char dx = 0;
 
 void level_init(void)
 {
-	levely = 0;
+	levely = sizeof(LevelSequence) * 4;
 	screeny = 0;
 
 	for(char i=0; i<8; i++)
 	{
 		levely--;
+		memcpy(tile_cache[levely & 7], LevelMap + 16 * LevelRows[LevelSequence[levely >> 2] * 4 + (levely & 3)], 16);
 		expand_tiles(levely, 0, ((levely - 1) & 7) * 4);
 		expand_tiles(levely, 1, ((levely - 1) & 7) * 4);
 		expand_tiles(levely, 2, ((levely - 1) & 7) * 4);
@@ -406,7 +483,7 @@ void display_loop(void)
 
 		if (!(screeny & 3))
 		{
-			const char * rt = LevelMap + 16 * LevelSequence[levely];
+			const char * rt = tile_cache[levely & 7];
 
 			char si = 0;
 			for(char i=0; i<16; i++)
@@ -424,6 +501,12 @@ void display_loop(void)
 					break;
 				case 29:
 					enemies_add(64 + 32 * si, 14, ET_PINGPONG, 64 + 32 * si, 4 + 32 * i);
+					break;
+				case 45:
+					enemies_add(28 + 32 * i, 6, ET_LEFTGUARD, 0, 0);
+					break;
+				case 46:
+					enemies_add(36 + 32 * i, 6, ET_RIGHTGUARD, 0, 0);
 					break;
 				}
 			}
@@ -573,29 +656,52 @@ void tile_replace(char sx, char sy, char ti)
 
 void tile_collide(char x, char y)
 {
-	char sy = (y >> 2) + levely + 1, sx = x >> 2;
+	unsigned sy = (y >> 2) + levely + 1, sx = x >> 2;
 
-	const char * lp  = LevelMap + 16 * LevelSequence[sy];
+	char * lp  = tile_cache[sy & 7];
 
 	char ti = lp[sx];
 
-	if (ti == 22)
+	switch (ti)
+	{
+	case 22:
 		ti = 0;
-	else if (ti == 21)
+		break;
+	case 21:
 		ti = 11;
-	else if (ti == 23 || ti == 32)
+		break;
+	case 23:
 		ti = 10;
-	else if (ti == 24)
+		break;
+	case 24:
 		ti = 8;
-	else if (ti == 25)
+		break;
+	case 25:
 		ti = 14;
-	else if (ti == 33)
+		break;
+	case 33:
 		ti = 34;
-	else if (ti == 34)
+		break;
+	case 34:
 		ti = 33;
-	else
+		break;
+	case 41:
+		ti = 12;
+		break;
+	case 42:
+		ti = 13;
+		break;
+	case 43:
+		ti = 22;
+		break;
+	case 44:
+		ti = 43;
+		break;
+	default:
 		return;
+	}
 
+	lp[sx] = ti;
 	tile_replace(sx, sy, ti);
 
 	if (ti == 34)
@@ -612,6 +718,7 @@ void tile_collide(char x, char y)
 			else
 				continue;
 
+			lp[sx] = ti;
 			tile_replace(i, sy, ti);
 		}
 	}
