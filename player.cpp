@@ -95,6 +95,8 @@ void player_move(void)
 				shipx -= 2;
 			}
 		}
+		else if (shipy > 232)
+			shipy = 232;
 
 		vspr_move(0, shipx - vscreenx, shipy);	
 		vspr_image(0, 65 + joyx[0]);
@@ -149,7 +151,7 @@ void player_move(void)
 				if (la >= 0xa0)
 				{
 					if (la == 0xb0 && sy > 1)
-						tile_remove(sx, sy);
+						tile_collide(sx, sy);
 
 					shy = 0;
 					vspr_hide(i + 1);

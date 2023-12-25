@@ -64,7 +64,6 @@ static const char LevelSequence[256] = {
 	4, 5, 6, 3,
 	22, 23, 24, 25,
 	26, 27, 2, 3,
-	0, 1, 2, 3,
 
 	16, 28, 21, 3,
 	0, 1, 2, 16,
@@ -83,39 +82,13 @@ static const char LevelSequence[256] = {
 	39, 39, 39, 39,
 	39, 40, 41, 9,
 
-	56, 1, 2, 3,
-	56, 1, 2, 3,
+	0, 56, 2, 56,
 
 	36, 36, 36, 36,
 	36, 36, 36, 36,
 	0, 1, 2, 44,
 	45, 46, 47, 48,
-	0, 1, 2, 3,
-	0, 1, 2, 3,
 
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-	0, 1, 2, 3,
 	0, 1, 2, 16,
 	
 	17, 59, 19, 61,
@@ -125,14 +98,44 @@ static const char LevelSequence[256] = {
 	
 	17, 61, 59, 61,
 	17, 59, 19, 20,
-	21, 1, 2, 3,
-	7, 8, 58, 8,
+	21, 1, 2, 7,
+	8, 58, 8, 9,
 	
-	9, 1, 2, 3,
-	4, 5, 57, 5,
-	6, 1, 2, 3,
+	0, 4, 5, 57,
+	5, 6, 2, 3,
+	
+	4, 62, 6, 3,
+	7, 63, 9, 3,
 	0, 1, 2, 3,
 	
+	64, 65, 66, 67,
+	67, 68, 2, 3,
+	69, 70, 71, 67,
+	67, 68, 2, 3,
+	
+	44, 72, 73, 74,
+	48, 1, 2, 80,
+	81, 82, 83, 84,
+	0, 1, 75, 76,
+	77, 78, 79, 3,
+	
+	80, 85, 86, 87,
+	88, 89, 90, 91,
+
+	84, 1, 2, 3,
+	92, 93, 94, 95,
+
+	96, 97, 98, 99,
+	100, 101, 102, 103,
+
+	0, 1, 2, 3,
+	29, 104, 105, 106,
+	107, 108, 109, 110,
+	111, 104, 105, 106,
+	107, 35, 2, 3,
+
+	0, 1, 2, 3,
+	0, 1, 2, 3,
 };
 
 void copy_screen_rows3(char * sp, char sx, char sy)
@@ -496,32 +499,15 @@ void display_loop(void)
 }
 
 
-void tile_remove(char x, char y)
+void tile_replace(char sx, char sy, char ti)
 {
-	char sy = (y >> 2) + levely + 1, sx = x >> 2;
-
-	char ti = LevelMap[16 * LevelSequence[sy] + sx];
-
-	if (ti == 22)
-		ti = 0;
-	else if (ti == 21)
-		ti = 11;
-	else if (ti == 23)
-		ti = 10;
-	else if (ti == 24)
-		ti = 8;
-	else if (ti == 25)
-		ti = 14;
-	else
-		return;
-
 	const char * tp = LevelTiles + ti * 16;
 
 	char * screen0 = screeni ? Screen1 : Screen0;
 	char * screen1 = screeni ? Screen0 : Screen1;
 
-	y = ((sy - 1) & 7) * 4;
-	x = sx * 4;
+	char y = ((sy - 1) & 7) * 4;
+	char x = sx * 4;
 
 	char scy = screeny;
 	if ((phase & 7) == 7)
@@ -546,38 +532,88 @@ void tile_remove(char x, char y)
 		y1 = 0;
 	}
 
-	if (y1 < 25)
+	if (x >= screenx && x < screenx + 36)
 	{
-		char * sp = screen1 + 40 * y1 + (x - screenx);
+		if (y1 < 25)
+		{
+			char * sp = screen1 + 40 * y1 + (x - screenx);
 
-		for(char i=0; i<n; i++)
-		{
-			char * scl = tilerows[(y1 + scy + i) & 31];
-			sp[0] = scl[x + 0];
-			sp[1] = scl[x + 1];
-			sp[2] = scl[x + 2];
-			sp[3] = scl[x + 3];
-			sp += 40;
-		}
-
-		char y0 = (y - scy - 1) & 31;
-		n = 4;
-		if (y0 > 28)
-		{
-			n = y0 & 3;
-			y0 = 0;
-		}
-		if (y0 < 25)
-		{
-			sp = screen0 + 40 * y0 + (x - pscreenx);
 			for(char i=0; i<n; i++)
 			{
-				sp[0] = 0xff;
-				sp[1] = 0xff;
-				sp[2] = 0xff;
-				sp[3] = 0xff;
+				char * scl = tilerows[(y1 + scy + i) & 31];
+				sp[0] = scl[x + 0];
+				sp[1] = scl[x + 1];
+				sp[2] = scl[x + 2];
+				sp[3] = scl[x + 3];
 				sp += 40;
+			}
+
+			char y0 = (y - scy - 1) & 31;
+			n = 4;
+			if (y0 > 28)
+			{
+				n = y0 & 3;
+				y0 = 0;
+			}
+			if (y0 < 25)
+			{
+				sp = screen0 + 40 * y0 + (x - pscreenx);
+				for(char i=0; i<n; i++)
+				{
+					sp[0] = 0xff;
+					sp[1] = 0xff;
+					sp[2] = 0xff;
+					sp[3] = 0xff;
+					sp += 40;
+				}
 			}
 		}
 	}
 }
+
+void tile_collide(char x, char y)
+{
+	char sy = (y >> 2) + levely + 1, sx = x >> 2;
+
+	const char * lp  = LevelMap + 16 * LevelSequence[sy];
+
+	char ti = lp[sx];
+
+	if (ti == 22)
+		ti = 0;
+	else if (ti == 21)
+		ti = 11;
+	else if (ti == 23 || ti == 32)
+		ti = 10;
+	else if (ti == 24)
+		ti = 8;
+	else if (ti == 25)
+		ti = 14;
+	else if (ti == 33)
+		ti = 34;
+	else if (ti == 34)
+		ti = 33;
+	else
+		return;
+
+	tile_replace(sx, sy, ti);
+
+	if (ti == 34)
+	{
+		for(char i=0; i<16; i++)
+		{
+			ti = lp[i];
+			if (ti == 31)
+				ti = 0;
+			else if (ti == 30)
+				ti = 11;
+			else if (ti == 32)
+				ti = 10;
+			else
+				continue;
+
+			tile_replace(i, sy, ti);
+		}
+	}
+}
+
