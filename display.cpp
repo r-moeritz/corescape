@@ -10,8 +10,9 @@
 #include "gamemusic.h"
 #include "player.h"
 #include "enemies.h"
+#include "levelrows.h"
 
-#define TIME_DEBUG	0
+#define TIME_DEBUG	1
 
 
 // The charpad resource in lz compression, without the need
@@ -26,7 +27,7 @@ __export const char LevelAttr[] = {
 
 // The tile char map mapping tile indices to blocks of 4x4 char indices
 const char LevelTiles[] = {
-	#embed ctm_tiles8 "tiles.ctm"
+	#embed ctm_tiles8sw "tiles.ctm"
 };
 #pragma align(LevelTiles, 256)
 
@@ -49,166 +50,10 @@ __striped char * const tilerows[32 + 4] = {
 #for(i,36) tile_buffer[i & 31],
 };
 
+const char * level_seq;
+const char * level_wave;
+
 char tile_cache[8][16];
-
-static const char LevelSequence[] = {
-	0, 0, 11, 11, 25, 41, 42, 0, 0, 54, 0, 53, 47, 51, 48, 49, 
-	51, 50, 51, 52, 0, 46, 45, 5, 44, 6, 7, 43, 8, 42, 41, 39, 
-	40, 0, 37, 38, 35, 36, 0, 33, 34, 31, 32, 27, 28, 29, 30, 21, 
-	24, 12, 13, 25, 26, 14, 15, 24, 21, 22, 23, 21, 19, 20, 21, 12, 
-	13, 14, 15, 0, 11, 7, 8, 11, 56, 57, 5, 55, 4, 0, 1, 2, 
-};
-
-static const char LevelRows[] = {
-	0, 1, 2, 3, 
-	112, 113, 114, 115, 
-	116, 113, 117, 118, 
-	0, 4, 5, 6, 
-	0, 7, 8, 9, 
-	0, 10, 11, 12, 
-	13, 14, 15, 3, 
-	0, 16, 17, 18, 
-	19, 20, 21, 3, 
-	0, 22, 23, 24, 
-	25, 26, 27, 3, 
-	36, 36, 36, 36, 
-	0, 1, 92, 93, 
-	94, 95, 96, 97, 
-	98, 99, 100, 101, 
-	102, 103, 2, 3, 
-	0, 80, 85, 86, 
-	87, 88, 89, 90, 
-	91, 84, 2, 3, 
-	0, 80, 119, 81, 
-	82, 83, 119, 84, 
-	0, 56, 2, 3, 
-	0, 49, 50, 51, 
-	52, 53, 54, 55, 
-	0, 16, 28, 21, 
-	0, 1, 75, 76, 
-	77, 78, 79, 3, 
-	44, 104, 105, 106, 
-	107, 108, 109, 110, 
-	111, 104, 105, 106, 
-	107, 120, 2, 3, 
-	0, 44, 72, 73, 
-	74, 48, 2, 3, 
-	0, 44, 45, 46, 
-	47, 48, 2, 3, 
-	0, 29, 30, 31, 
-	32, 33, 34, 35, 
-	4, 37, 38, 39, 
-	39, 40, 41, 9, 
-	7, 41, 121, 42, 
-	42, 43, 37, 6, 
-	0, 4, 57, 6, 
-	0, 7, 58, 9, 
-	19, 59, 61, 18, 
-	60, 14, 11, 60, 
-	0, 4, 62, 6, 
-	0, 7, 63, 9, 
-	0, 1, 80, 119, 
-	128, 129, 130, 140, 
-	131, 132, 133, 140, 
-	134, 135, 136, 140, 
-	137, 138, 139, 140, 
-	140, 84, 2, 3, 
-	141, 141, 141, 141, 
-	142, 142, 142, 142, 
-	13, 143, 144, 3, 
-	0, 69, 145, 146, 
-	147, 148, 48, 3, 
-};
-#if 0
-static const char LevelSequence[256] = {
-	0, 1, 2, 3,
-	10, 11, 12, 13, 
-	14, 15, 2, 3,
-	
-	7, 8, 9, 3,
-	10, 11, 60, 13, 
-	14, 15, 2, 3,
-
-	16, 17, 18, 19,
-	20, 21, 2, 3,
-
-	4, 5, 6, 3,
-	22, 23, 24, 25,
-	26, 27, 2, 3,
-
-	16, 28, 21, 3,
-	0, 1, 2, 16,
-	28, 21, 2, 3,
-
-	49, 50, 51, 52,
-	53, 54, 55, 3,
-
-	0, 1, 2, 3,
-
-	29, 30, 31, 32,
-	33, 34, 35, 3,
-
-	0, 1, 2, 3,
-	4, 37, 37, 38,
-	39, 39, 39, 39,
-	39, 40, 41, 9,
-
-	0, 56, 2, 56,
-
-	36, 36, 36, 36,
-	36, 36, 36, 36,
-	0, 1, 2, 44,
-	45, 46, 47, 48,
-
-	0, 1, 2, 16,
-	
-	17, 59, 19, 61,
-	17, 61, 59, 20,
-	17, 61, 19, 20,
-	21, 1, 2, 16,
-	
-	17, 61, 59, 61,
-	17, 59, 19, 20,
-	21, 1, 2, 7,
-	8, 58, 8, 9,
-	
-	0, 4, 5, 57,
-	5, 6, 2, 3,
-	
-	4, 62, 6, 3,
-	7, 63, 9, 3,
-	0, 1, 2, 3,
-	
-	64, 65, 66, 67,
-	67, 68, 2, 3,
-	69, 70, 71, 67,
-	67, 68, 2, 3,
-	
-	44, 72, 73, 74,
-	48, 1, 2, 80,
-	81, 82, 83, 84,
-	0, 1, 75, 76,
-	77, 78, 79, 3,
-	
-	80, 85, 86, 87,
-	88, 89, 90, 91,
-
-	84, 1, 2, 3,
-	92, 93, 94, 95,
-
-	96, 97, 98, 99,
-	100, 101, 102, 103,
-
-	0, 1, 2, 3,
-	29, 104, 105, 106,
-	107, 108, 109, 110,
-	111, 104, 105, 106,
-	107, 35, 2, 3,
-
-	0, 1, 2, 3,
-	0, 1, 2, 3,
-};
-#endif
 
 void copy_screen_rows3(char * sp, char sx, char sy)
 {
@@ -244,9 +89,10 @@ void copy_screen_rows4(char * sp, char sx, char sy)
 	}	
 }
 
+#define NUM_TILES	64
 
 // Expand a row of tiles into tile buffer
-void expand_tiles(unsigned sy, char ry, char dy)
+void expand_tiles(char sy, char ry, char dy)
 {
 	// Get source tile row
 	const char * sp = tile_cache[sy & 7];
@@ -254,23 +100,85 @@ void expand_tiles(unsigned sy, char ry, char dy)
 	// Get target tile buffer pointers
 	char * dp = tilerows[dy + ry];
 
+	// Get tile char map address for this tile
+	const char * tp0 = LevelTiles + NUM_TILES * (4 * ry + 0);
+	const char * tp1 = LevelTiles + NUM_TILES * (4 * ry + 1);
+	const char * tp2 = LevelTiles + NUM_TILES * (4 * ry + 2);
+	const char * tp3 = LevelTiles + NUM_TILES * (4 * ry + 3);
+
 	// We have 16 tiles (64 chars) for tile buffer
 	for(char tx=0; tx<16; tx++)
 	{
 		// Get actual tile
 		char t = sp[tx];
 
-		// Get tile char map address for this tile
-		const char * tp = LevelTiles + (t * 16 | 4 * ry);
 
 		// Expand 4x4 block into tile buffer
-		#pragma unroll(full)
-		for(char x=0; x<4; x++)
-			dp[x] = tp[x];
+		dp[0] = tp0[t];
+		dp[1] = tp1[t];
+		dp[2] = tp2[t];
+		dp[3] = tp3[t];
 
 		dp += 4;
 	}
 }
+
+void expand_tiles_0(char sy, char dy)
+{
+	// Get source tile row
+	const char * sp = tile_cache[sy & 7];
+
+	// Get target tile buffer pointers
+	char * dp = tilerows[dy + 0];
+
+	// We have 16 tiles (64 chars) for tile buffer
+	for(char tx=0; tx<16; tx++)
+	{
+		// Get actual tile
+		char t = sp[tx];
+
+		// Expand 4x4 block into tile buffer
+		dp[ 0] = LevelTiles[0 * NUM_TILES + t];
+		dp[ 1] = LevelTiles[1 * NUM_TILES + t];
+		dp[ 2] = LevelTiles[2 * NUM_TILES + t];
+		dp[ 3] = LevelTiles[3 * NUM_TILES + t];
+		dp[64] = LevelTiles[4 * NUM_TILES + t];
+		dp[65] = LevelTiles[5 * NUM_TILES + t];
+		dp[66] = LevelTiles[6 * NUM_TILES + t];
+		dp[67] = LevelTiles[7 * NUM_TILES + t];
+
+		dp += 4;
+	}
+}
+
+void expand_tiles_1(char sy, char dy)
+{
+	// Get source tile row
+	const char * sp = tile_cache[sy & 7];
+
+	// Get target tile buffer pointers
+	char * dp = tilerows[dy + 2];
+
+	// We have 16 tiles (64 chars) for tile buffer
+	for(char tx=0; tx<16; tx++)
+	{
+		// Get actual tile
+		char t = sp[tx];
+
+		// Expand 4x4 block into tile buffer
+		dp[ 0] = LevelTiles[ 8 * NUM_TILES + t];
+		dp[ 1] = LevelTiles[ 9 * NUM_TILES + t];
+		dp[ 2] = LevelTiles[10 * NUM_TILES + t];
+		dp[ 3] = LevelTiles[11 * NUM_TILES + t];
+		dp[64] = LevelTiles[12 * NUM_TILES + t];
+		dp[65] = LevelTiles[13 * NUM_TILES + t];
+		dp[66] = LevelTiles[14 * NUM_TILES + t];
+		dp[67] = LevelTiles[15 * NUM_TILES + t];
+
+		dp += 4;
+	}
+}
+
 
 unsigned levely;
 char screenx, screeny, pscreenx;
@@ -283,14 +191,21 @@ void rebuild_screen(char phase)
 	switch (phase & 7)
 	{
 	case 7:
-		if (!(screeny & 3))
+		switch (screeny & 3)
 		{
+		case 0:
 			levely--;
-			memcpy(tile_cache[levely & 7], LevelMap + 16 * LevelRows[LevelSequence[levely >> 2] * 4 + (levely & 3)], 16);
+			memcpy(tile_cache[levely & 7], LevelMap + 16 * LevelRows[level_seq[levely >> 2] * 4 + (levely & 3)], 16);
+			break;
+		case 1:
+			expand_tiles_0(levely, ((levely - 1) & 7) * 4);
+			break;
+		case 2:
+			expand_tiles_1(levely, ((levely - 1) & 7) * 4);
+			break;
+		case 3:
+			break;
 		}
-
-		expand_tiles(levely, screeny & 3, ((levely - 1) & 7) * 4);
-
 		screeny--;
 		break;
 	case 0:
@@ -409,15 +324,17 @@ signed char ndx = 0;
 char	starp[4];
 signed char dx = 0;
 
-void level_init(void)
+void level_init(const char * seq, const char * wave, char lsize)
 {
-	levely = sizeof(LevelSequence) * 4;
+	level_seq = seq;
+	level_wave = wave;
+	levely = lsize * 4;
 	screeny = 0;
 
 	for(char i=0; i<8; i++)
 	{
 		levely--;
-		memcpy(tile_cache[levely & 7], LevelMap + 16 * LevelRows[LevelSequence[levely >> 2] * 4 + (levely & 3)], 16);
+		memcpy(tile_cache[levely & 7], LevelMap + 16 * LevelRows[level_seq[levely >> 2] * 4 + (levely & 3)], 16);
 		expand_tiles(levely, 0, ((levely - 1) & 7) * 4);
 		expand_tiles(levely, 1, ((levely - 1) & 7) * 4);
 		expand_tiles(levely, 2, ((levely - 1) & 7) * 4);
@@ -461,6 +378,51 @@ void display_loop(void)
 			px = (px & ~7) | 3;
 	}
 
+	if (!(phase & 7))
+	{
+		vic.color_border = VCOL_YELLOW;
+
+	 	if ((screeny & 3) == 2)
+		{
+			const char * rt = tile_cache[(levely + 1) & 7];
+
+			char si = 0;
+			for(char i=0; i<16; i++)
+			{
+				switch (rt[i])
+				{
+				case 20:
+					enemies_add(32 + 32 * i, 30, ET_GUN, 0, 0);
+					break;
+				case 26:
+					enemies_add(32 + 32 * i, 56, ET_EVDOOR, 0, 0);
+					break;
+				case 28:
+					si = i;
+					break;
+				case 29:
+					enemies_add(64 + 32 * si, 30, ET_PINGPONG, 64 + 32 * si, 4 + 32 * i);
+					break;
+				case 45:
+					enemies_add(28 + 32 * i, 22, ET_LEFTGUARD, 0, 0);
+					break;
+				case 46:
+					enemies_add(36 + 32 * i, 22, ET_RIGHTGUARD, 0, 0);
+					break;
+				case 47:
+					enemies_add(32 * i - 16, 28, ET_SPARKSPHERE, 0, 0);
+					break;
+				}
+			}
+		
+			if (!(levely & 3))
+				wave_start(level_wave[levely >> 2]);
+		}
+		wave_loop();
+
+		vic.color_border = VCOL_BLUE;		
+	}
+
 #if TIME_DEBUG
 	vic.color_border = VCOL_BLACK;
 #endif
@@ -480,44 +442,6 @@ void display_loop(void)
 		vspr_screen(screeni ? Screen1 : Screen0);
 		pscreenx = screenx;
 		screenx -= ndx;
-
-		if (!(screeny & 3))
-		{
-			const char * rt = tile_cache[levely & 7];
-
-			char si = 0;
-			for(char i=0; i<16; i++)
-			{
-				switch (rt[i])
-				{
-				case 20:
-					enemies_add(32 + 32 * i, 14, ET_GUN, 0, 0);
-					break;
-				case 26:
-					enemies_add(32 + 32 * i, 40, ET_EVDOOR, 0, 0);
-					break;
-				case 28:
-					si = i;
-					break;
-				case 29:
-					enemies_add(64 + 32 * si, 14, ET_PINGPONG, 64 + 32 * si, 4 + 32 * i);
-					break;
-				case 45:
-					enemies_add(28 + 32 * i, 6, ET_LEFTGUARD, 0, 0);
-					break;
-				case 46:
-					enemies_add(36 + 32 * i, 6, ET_RIGHTGUARD, 0, 0);
-					break;
-				}
-			}
-
-			if ((levely & 31) == 16)
-			{
-				enemies_add(256, 14, ET_UFO, 0, 0);				
-				enemies_add(256, 14, ET_UFO, 0, 0);
-			}
-
-		}
 	}
 
 	vic.ctrl1 = VIC_CTRL1_DEN | (phase & 7);
@@ -581,10 +505,105 @@ void display_loop(void)
 		px++;
 }
 
+void tile_redraw(char sy, const char * tis)
+{
+	char y = ((sy - 1) & 7) * 4;
+
+	char * scl0 = tilerows[y & 31];
+	char * scl1 = scl0 + 64;
+	char * scl2 = scl0 + 128;
+	char * scl3 = scl0 + 192;
+
+	const char * tp = LevelTiles;
+
+	char x = 0;
+	for(char i=0; i<16; i++)
+	{
+		char t = tis[i];
+
+		scl0[x] = tp[t + NUM_TILES *  0];
+		scl1[x] = tp[t + NUM_TILES *  4];
+		scl2[x] = tp[t + NUM_TILES *  8];
+		scl3[x] = tp[t + NUM_TILES * 12];
+		x++;
+
+		scl0[x] = tp[t + NUM_TILES *  1];
+		scl1[x] = tp[t + NUM_TILES *  5];
+		scl2[x] = tp[t + NUM_TILES *  9];
+		scl3[x] = tp[t + NUM_TILES * 13];
+		x++;
+
+		scl0[x] = tp[t + NUM_TILES *  2];
+		scl1[x] = tp[t + NUM_TILES *  6];
+		scl2[x] = tp[t + NUM_TILES * 10];
+		scl3[x] = tp[t + NUM_TILES * 14];
+		x++;
+
+		scl0[x] = tp[t + NUM_TILES *  3];
+		scl1[x] = tp[t + NUM_TILES *  7];
+		scl2[x] = tp[t + NUM_TILES * 11];
+		scl3[x] = tp[t + NUM_TILES * 15];
+		x++;
+	}
+
+	vic.color_border++;
+
+	char scy = screeny;
+	if ((phase & 7) == 7)
+		scy++;
+
+	char * screen0 = screeni ? Screen1 : Screen0;
+	char * screen1 = screeni ? Screen0 : Screen1;
+
+	char y1 = (y - scy) & 31;
+	char n = 4;
+	if (y1 > 28)
+	{
+		n = y1 & 3;
+		y1 = 0;
+	}
+
+	if (y1 < 25)
+	{
+		char * sp = screen1 + 40 * y1;
+
+		char * scl = tilerows[(y1 + scy) & 31] + screenx;
+		for(char i=0; i<n; i++)
+		{
+			for(signed char x=39; x>=0; x--)
+				sp[x] = scl[x];
+			sp += 40;
+			scl += 64;
+		}
+
+		vic.color_border++;
+
+		char y0 = (y - scy - 1) & 31;
+		n = 4;
+		if (y0 > 28)
+		{
+			n = y0 & 3;
+			y0 = 0;
+		}
+		if (y0 < 25)
+		{
+			sp = screen0 + 40 * y0;
+			scl = tilerows[(y0 + scy + 1) & 31] + pscreenx;
+
+			for(char i=0; i<n; i++)
+			{
+				for(signed char x=39; x>=0; x--)
+					sp[x] = scl[x];
+				sp += 40;
+				scl += 64;
+			}
+		}
+	}
+}
 
 void tile_replace(char sx, char sy, char ti)
 {
-	const char * tp = LevelTiles + ti * 16;
+	const char * tp = LevelTiles + ti;
 
 	char * screen0 = screeni ? Screen1 : Screen0;
 	char * screen1 = screeni ? Screen0 : Screen1;
@@ -596,15 +615,19 @@ void tile_replace(char sx, char sy, char ti)
 	if ((phase & 7) == 7)
 		scy++;
 
+	char * scl = tilerows[y & 31];
+
+	char	tx = x;
+	#pragma unroll(full)
 	for(char i=0; i<4; i++)
 	{
-		char * scl = tilerows[(y + i) & 31];
-		scl[x + 0] = tp[0];
-		scl[x + 1] = tp[1];
-		scl[x + 2] = tp[2];
-		scl[x + 3] = tp[3];
+		scl[tx + 0] = tp[0 * NUM_TILES];
+		scl[tx + 1] = tp[1 * NUM_TILES];
+		scl[tx + 2] = tp[2 * NUM_TILES];
+		scl[tx + 3] = tp[3 * NUM_TILES];
 		
-		tp += 4;
+		tp += 4 * NUM_TILES;
+		tx += 64;
 	}
 
 	char y1 = (y - scy) & 31;
@@ -641,13 +664,14 @@ void tile_replace(char sx, char sy, char ti)
 			if (y0 < 25)
 			{
 				sp = screen0 + 40 * y0 + (x - pscreenx);
+				char ty = 0;
 				for(char i=0; i<n; i++)
 				{
-					sp[0] = 0xff;
-					sp[1] = 0xff;
-					sp[2] = 0xff;
-					sp[3] = 0xff;
-					sp += 40;
+					sp[ty++] = 0xff;
+					sp[ty++] = 0xff;
+					sp[ty++] = 0xff;
+					sp[ty++] = 0xff;
+					ty += 36;
 				}
 			}
 		}
@@ -656,7 +680,7 @@ void tile_replace(char sx, char sy, char ti)
 
 void tile_collide(char x, char y)
 {
-	unsigned sy = (y >> 2) + levely + 1, sx = x >> 2;
+	char sy = (y >> 2) + levely + 1, sx = x >> 2;
 
 	char * lp  = tile_cache[sy & 7];
 
@@ -682,9 +706,6 @@ void tile_collide(char x, char y)
 	case 33:
 		ti = 34;
 		break;
-	case 34:
-		ti = 33;
-		break;
 	case 41:
 		ti = 12;
 		break;
@@ -701,26 +722,36 @@ void tile_collide(char x, char y)
 		return;
 	}
 
-	lp[sx] = ti;
-	tile_replace(sx, sy, ti);
-
 	if (ti == 34)
 	{
 		for(char i=0; i<16; i++)
 		{
 			ti = lp[i];
-			if (ti == 31)
+			switch (ti)
+			{
+			case 31:
 				ti = 0;
-			else if (ti == 30)
+				break;
+			case 30:
 				ti = 11;
-			else if (ti == 32)
+				break;
+			case 32:
 				ti = 10;
-			else
+				break;
+			case 33:
+				ti = 34;
+				break;
+			default:
 				continue;
-
-			lp[sx] = ti;
-			tile_replace(i, sy, ti);
+			}
+			lp[i] = ti;
 		}
+		tile_redraw(sy, lp);
+	}
+	else
+	{
+		lp[sx] = ti;
+		tile_replace(sx, sy, ti);
 	}
 }
 

@@ -28,7 +28,7 @@ extern int vscreenx;
 
 void display_init(void);
 
-void level_init(void);
+void level_init(const char * seq, const char * wave, char lsize);
 
 void rebuild_screen(char phase);
 

@@ -8,7 +8,7 @@ void music_init(Tune tune)
 	__asm
 	{
 		lda		tune
-		jsr		$a000
+		jsr		$9800
 	}
 }
 
@@ -22,13 +22,9 @@ void music_play(void)
 	{
 		__asm
 		{	
-			jsr		$a003
+			jsr		$9803
 		}
 	}
-}
-
-void music_patch_voice3(bool enable)
-{
 }
 
 void music_silence(void)
@@ -37,6 +33,8 @@ void music_silence(void)
 	sid.voices[0].susrel = 0;
 	sid.voices[1].ctrl = 0;
 	sid.voices[1].susrel = 0;
+	sid.voices[2].ctrl = 0;
+	sid.voices[2].susrel = 0;
 }
 
 void music_toggle(void)

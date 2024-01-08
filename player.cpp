@@ -25,6 +25,11 @@ void player_init(void)
 	vspr_set(0, shipx, shipy, 65, VCOL_ORANGE);
 }
 
+static inline bool char_blocks_player(char c)
+{
+	return c >= 0x90 && c < 0xc0;
+}
+
 void player_move(void)
 {
 	if (playerState == PLST_DESTROYED)
@@ -59,7 +64,7 @@ void player_move(void)
 		if (playerState == PLST_ACTIVE)
 		{
 			char	scx0 = (shipx - 24) >> 3;
-			char	scx1 = (shipx - 20) >> 3;
+			char	scx1 = (shipx - 24) >> 3;
 
 			char	scy = (shipy - ssy) >> 3;
 
@@ -67,7 +72,7 @@ void player_move(void)
 			char * scl1 = tilerows[(screeny + scy + 1) & 31];
 			char * scl2 = tilerows[(screeny + scy + 2) & 31];
 
-			if (LevelAttr[scl0[scx0 + 1]] >= 0x90 || LevelAttr[scl0[scx1 + 1]] >= 0x90)
+			if (char_blocks_player(LevelAttr[scl0[scx0 + 1]]) || char_blocks_player(LevelAttr[scl0[scx1 + 1]]))
 			{
 				shipy = scy * 8 + (phase & 7) + 46;
 				scl0 = scl1;
@@ -76,21 +81,22 @@ void player_move(void)
 				{
 					playerState = PLST_EXPLODING;
 					playerStateCount = 64;
+					shipy = 228;
 				}
 			}
 			else if (shipy > 232)
 				shipy = 232;
 			else if (shipy < 60)
 				shipy = 60;
-			else if (LevelAttr[scl2[scx0 + 1]] >= 0x90 || LevelAttr[scl2[scx1 + 1]] >= 0x90)
+			else if (char_blocks_player(LevelAttr[scl2[scx0 + 1]]) || char_blocks_player(LevelAttr[scl2[scx1 + 1]]))
 				shipy -= 3;
 
-			if (LevelAttr[scl0[scx0]] >= 0x90 || LevelAttr[scl1[scx1]] >= 0x90)
+			if (char_blocks_player(LevelAttr[scl0[scx0]]) || char_blocks_player(LevelAttr[scl1[scx1]]))
 			{
 				shipx += 2;
 			}
 
-			if (LevelAttr[scl0[scx1 + 2]] >= 0x90 || LevelAttr[scl1[scx1 + 2]] >= 0x90)
+			if (char_blocks_player(LevelAttr[scl0[scx1 + 2]]) || char_blocks_player(LevelAttr[scl1[scx1 + 2]]))
 			{
 				shipx -= 2;
 			}
@@ -162,7 +168,7 @@ void player_move(void)
 			{
 				shy -= 4;
 
-				if (shy < 20)
+				if (shy < 40)
 				{
 					shy = 0;
 					vspr_hide(i + 1);
@@ -182,7 +188,7 @@ void player_move(void)
 		else if (shot[shots].y == 0 && joyb[0])
 		{
 			shot[shots].y = shipy - 8;
-			shot[shots].x = shipx;
+			shot[shots].x = shipx + 1;
 
 			vspr_set(shots + 1, shot[shots].x - vscreenx, shot[shots].y, 67, VCOL_YELLOW);
 			shots = (shots + 1) & 3;
