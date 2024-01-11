@@ -14,7 +14,7 @@
 #include "enemies.h"
 #include "levelseq0.h"
 #include "levelseq1.h"
-
+#include "levelseq2.h"
 
 int main(void)
 {
@@ -27,7 +27,7 @@ int main(void)
 		level_init(LevelSequence0, LevelWaves0, sizeof(LevelSequence0));
 		player_init();
 		enemies_init();
-		music_init(TUNE_MAIN_1);
+		music_init(TUNE_MAIN_3);
 
 //		while (playerState != PLST_DESTROYED)
 		for(;;)

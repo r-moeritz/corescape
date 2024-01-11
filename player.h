@@ -17,8 +17,9 @@ extern char shots, shotd;
 
 extern __striped struct Shot
 {
-	int 	x;
-	char 	y;
+	int 		x;
+	char 		y;
+	signed char	dx;
 }	shot[4];
 
 

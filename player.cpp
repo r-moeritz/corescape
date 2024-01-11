@@ -35,7 +35,10 @@ void player_move(void)
 	if (playerState == PLST_DESTROYED)
 		return;
 
+	joy_poll(0);
+
 	char	ssy = 39 + (phase & 7);
+	signed char sdx = joyx[0];
 
 	if (playerState == PLST_EXPLODING)
 	{
@@ -49,17 +52,22 @@ void player_move(void)
 	}
 	else
 	{
-		joy_poll(0);
-		shipx += 2 * joyx[0];
+		shipx += 2 * sdx;
 		if (joyy[0] < 0)
 			shipy -= 3;
 		else if (joyy[0] > 0)
 			shipy += 3;
 
 		if (shipx < 48)
+		{
 			shipx = 48;
+			sdx = 0;
+		}
 		else if (shipx > 500)
+		{
 			shipx = 500;
+			sdx = 0;
+		}
 
 		if (playerState == PLST_ACTIVE)
 		{
@@ -94,11 +102,13 @@ void player_move(void)
 			if (char_blocks_player(LevelAttr[scl0[scx0]]) || char_blocks_player(LevelAttr[scl1[scx1]]))
 			{
 				shipx += 2;
+				sdx = 0;
 			}
 
 			if (char_blocks_player(LevelAttr[scl0[scx1 + 2]]) || char_blocks_player(LevelAttr[scl1[scx1 + 2]]))
 			{
 				shipx -= 2;
+				sdx = 0;
 			}
 		}
 		else if (shipy > 232)
@@ -126,7 +136,7 @@ void player_move(void)
 		for(char i=bulls; i!=bulle; i++)
 		{
 			char j = i & 7;
-			if (bullet[j].y != 0 && (char)(bullet[j].hx - hx) < 8 && (char)(bullet[j].hy - shipy) < 16)
+			if (bullet[j].y != 0 && (char)(bullet[j].hx - hx) < 8 && (char)(bullet[j].y - shipy) < 16)
 			{
 				playerState = PLST_EXPLODING;
 				playerStateCount = 64;
@@ -178,6 +188,7 @@ void player_move(void)
 			}
 
 			shot[i].y = shy;
+			shot[i].x += shot[i].dx;
 		}
 	}
 
@@ -189,6 +200,7 @@ void player_move(void)
 		{
 			shot[shots].y = shipy - 8;
 			shot[shots].x = shipx + 1;
+			shot[shots].dx = sdx;
 
 			vspr_set(shots + 1, shot[shots].x - vscreenx, shot[shots].y, 67, VCOL_YELLOW);
 			shots = (shots + 1) & 3;

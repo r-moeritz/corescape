@@ -4,8 +4,8 @@ extern char bulls, bulle, bulld;
 
 extern __striped struct Bullet
 {
-	int 	x, y, dx, dy;
-	char	hx, hy;
+	int 	x, dx;
+	char	hx, hy, y, dy;
 }	bullet[8];
 
 enum EnemyType
@@ -33,6 +33,9 @@ enum EnemyType
 	ET_SHIP_2,
 	ET_SHIP_3,
 	ET_SHIP_4,
+
+	ET_RETRO,
+	ET_CORVETTE,
 
 	NUM_ENEMY_TYPES
 };
@@ -67,6 +70,14 @@ enum EnemyWave
 	WAVE_SHIP_2,
 	WAVE_SHIP_3,
 	WAVE_SHIP_4,
+	WAVE_RETRO_1,
+	WAVE_RETRO_2,
+	WAVE_RETRO_3,
+	WAVE_RETRO_4,
+	WAVE_CORVETTE_1,
+	WAVE_CORVETTE_2,
+	WAVE_CORVETTE_3,
+	WAVE_CORVETTE_4,
 };
 
 extern __striped struct Enemy
