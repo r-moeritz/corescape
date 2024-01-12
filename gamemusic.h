@@ -9,6 +9,12 @@ enum Tune
 	TUNE_MAIN_4
 };
 
+
+// 3:44
+// 2:25
+// 3:16
+// 4:05
+
 // 1 | 3:52
 //		0:06
 //		0:16
@@ -54,6 +60,8 @@ enum Tune
 extern bool	music_off;
 
 void music_init(Tune tune);
+
+void music_volume(char volume);
 
 void music_play(void);
 

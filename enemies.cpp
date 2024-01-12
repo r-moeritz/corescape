@@ -2,7 +2,7 @@
 #include <c64/sprites.h>
 #include "enemies.h"
 #include "player.h"
-
+#include "status.h"
 
 static const signed char sintab[] = {
 0, 4, 9, 13, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 57, 60, 64, 67, 70, 72, 75, 77, 79, 81, 83, 85, 86, 87, 88, 89, 90, 90, 90, 90, 90, 89, 88, 87, 86, 85, 83, 81, 79, 77, 75, 72, 70, 67, 64, 60, 57, 54, 50, 46, 42, 38, 34, 30, 26, 22, 18, 13, 9, 4, 0, -4, -9, -13, -18, -22, -26, -30, -34, -38, -42, -46, -50, -54, -57, -60, -64, -67, -70, -72, -75, -77, -79, -81, -83, -85, -86, -87, -88, -89, -90, -90, -90, -90, -90, -89, -88, -87, -86, -85, -83, -81, -79, -77, -75, -72, -70, -67, -64, -60, -57, -54, -50, -46, -42, -38, -34, -30, -26, -22, -18, -13, -9, -4
@@ -116,16 +116,25 @@ void enemies_add(int x, int y, EnemyType type, int p0, int p1)
 	case ET_CORVETTE:
 		vspr_set(i + 8, x - vscreenx, y, 144, VCOL_YELLOW);
 		break;
+	case ET_STAR:
+		vspr_set(i + 8, x - vscreenx, y, 96, VCOL_YELLOW);
+		break;
 	}
 }
 
+const int StarPos[] = {
+	24 + 20,
+	24 + 20 + 64,
+	512 - 16 - 64,
+	512 - 16
+};
 
 void wave_start(EnemyWave wave)
 {
 	switch(wave)
 	{
 	case WAVE_UFO_4:
-		enemies_add(256, 14, ET_UFO, 0, 0);				
+		enemies_add(256, 14, ET_UFO, 0, 0);		
 	case WAVE_UFO_3:
 		enemies_add(128, 14, ET_UFO, 0, 0);				
 	case WAVE_UFO_2:
@@ -139,7 +148,7 @@ void wave_start(EnemyWave wave)
 	case WAVE_ALIEN_4:
 		for(char i=0; i<8; i++)
 			enemies_add(0,  (5 + 5 * (wave - WAVE_ALIEN_1)) * i, ET_ALIEN_1 + wave - WAVE_ALIEN_1, 0, 0);
-		break;
+		break;		
 	case WAVE_POPCORN_1:
 	case WAVE_POPCORN_2:
 	case WAVE_POPCORN_3:
@@ -169,7 +178,18 @@ void wave_start(EnemyWave wave)
 	case WAVE_CORVETTE_4:
 		ewave = wave;
 		ewave_cnt = 0;
-		break;		
+		break;
+	case WAVE_STAR_1:
+	case WAVE_STAR_2:
+	case WAVE_STAR_3:
+	case WAVE_STAR_4:
+	case WAVE_STAR_5:
+	case WAVE_STAR_6:
+	case WAVE_STAR_7:
+	case WAVE_STAR_8:
+		enemies_add(StarPos[(wave - WAVE_STAR_1) & 3], 14 + 64 * (((wave - WAVE_STAR_1) >> 2) & 1) , ET_STAR, 0, 0);
+		break;
+
 	}	
 }
 
@@ -248,7 +268,7 @@ void wave_loop(void)
 	}
 }
 
-bool enemies_collide(char hx, char y)
+char enemies_collide(char hx, char y)
 {
 	for(char ei=enemys; ei!=enemye; ei++)
 	{
@@ -259,15 +279,15 @@ bool enemies_collide(char hx, char y)
 		{
 		case ET_EVDOOR:
 			if ((e->phase & 63) >= 48 && (char)((e->x >> 1) + 4 - hx) < 8 && (char)(e->y + 32 - y) < 32)
-				return true;
+				return i;
 			break;
 		case ET_PINGPONG:
 			if ((char)((e->x >> 1) + 16 - hx) < 32 && (char)(e->y + 12 - y) < 16)
-				return true;
+				return i;
 			break;
 		case ET_SPARKSPHERE:
 			if ((char)((e->x >> 1) + 8 - hx) < 16 && (char)(e->y + 14 - y) < 28)
-				return true;
+				return i;
 			break;
 		case ET_ALIEN_1:
 		case ET_ALIEN_2:
@@ -280,13 +300,14 @@ bool enemies_collide(char hx, char y)
 		case ET_SHIP_4:
 		case ET_RETRO:
 		case ET_CORVETTE:
+		case ET_STAR:
 			if ((char)((e->x >> 1) + 8 - hx) < 16 && (char)(e->y + 14 - y) < 28)
-				return true;
+				return i;
 			break;
 		}
 	}
 
-	return false;
+	return 0xff;
 }
 
 #define ETF_SHOT	0x01
@@ -317,6 +338,32 @@ static const char EnemyFlags[NUM_ENEMY_TYPES] =
 	[ET_CORVETTE] = ETF_SHOT,
 };
 
+static const unsigned EnemyScore[NUM_ENEMY_TYPES] =
+{
+	[ET_UFO] = 10,
+	[ET_GUN] = 5,
+	[ET_LEFTGUARD] = 20,
+	[ET_RIGHTGUARD] = 20,
+
+	[ET_ALIEN_1] = 25,
+	[ET_ALIEN_2] = 25,
+	[ET_ALIEN_3] = 25,
+	[ET_ALIEN_4] = 25,
+
+	[ET_POPCORN] = 10,
+
+	[ET_BOMBER_LEFT] = 25,
+	[ET_BOMBER_RIGHT] = 25,
+
+	[ET_SHIP_1] = 50,
+	[ET_SHIP_2] = 55,
+	[ET_SHIP_3] = 60,
+	[ET_SHIP_4] = 65,
+
+	[ET_RETRO] = 100,
+	[ET_CORVETTE] = 33,
+};
+
 void enemies_check(void)
 {
 	for(char ei=enemys; ei!=enemye; ei++)
@@ -338,6 +385,7 @@ void enemies_check(void)
 						{
 							s->y = 0;
 							vspr_hide(j + 1);
+							score_inc(EnemyScore[e->type]);
 							e->type = ET_EXPLOSION;
 							e->phase = 0;
 							break;
@@ -373,7 +421,7 @@ static const char BulletColors[] =
 static const char CorvetteColor[] = 
 	{VCOL_PURPLE, VCOL_YELLOW, VCOL_PURPLE, VCOL_PURPLE, 
 	 VCOL_PURPLE, VCOL_BLUE, VCOL_PURPLE, VCOL_PURPLE };
-	 
+
 static const signed char sphere_dxy[16] = {3, 2, 1, 0, 0, -1, -2, -3, -3, -2, -1, 0, 0, 1, 2, 3};
 
 static const char ufo_enter[32] = {
@@ -390,7 +438,10 @@ static const char ufo_leave[64] = {
 
 void enemies_move(void)
 {
+
+#if TIME_DEBUG
 	vic.color_border = VCOL_LT_GREEN;
+#endif
 
 	if (bulld > 0)
 		bulld--;
@@ -770,10 +821,28 @@ void enemies_move(void)
 					vspr_hide(i + 8);
 				}
 			} break;
+
+		case ET_STAR:
+			if (e->y < 250)
+			{
+				e->y++;
+				e->phase++;
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+				vspr_image(i + 8, 96 + ((e->phase >> 2) & 3));
+			}
+			else
+			{
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+			}
+
+			break;
 		}		
 	}
 
+#if TIME_DEBUG
 	vic.color_border = VCOL_GREEN;
+#endif
 
 
 	for(char i=bulls; i!=bulle; i++)
@@ -801,6 +870,8 @@ void enemies_move(void)
 	while (bulls != bulle && bullet[bulls & 7].y == 0)
 		bulls++;
 
+#if TIME_DEBUG
 	vic.color_border = VCOL_BLUE;	
+#endif
 }
 

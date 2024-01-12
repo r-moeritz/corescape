@@ -22,7 +22,6 @@ extern __striped char * const tilerows[32 + 4];
 extern unsigned levely;
 extern char screenx, screeny;
 extern char screeni;
-extern char LevelScrollFont[4][2][2][32];
 extern char phase;
 extern int vscreenx;
 

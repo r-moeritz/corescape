@@ -8,7 +8,7 @@ void music_init(Tune tune)
 	__asm
 	{
 		lda		tune
-		jsr		$9800
+		jsr		$9400
 	}
 }
 
@@ -22,7 +22,7 @@ void music_play(void)
 	{
 		__asm
 		{	
-			jsr		$9803
+			jsr		$9403
 		}
 	}
 }
@@ -46,4 +46,9 @@ void music_toggle(void)
 		music_off = true;
 		music_silence();
 	}
+}
+
+void music_volume(char volume)
+{
+	*(volatile char *)0x955d = volume;
 }

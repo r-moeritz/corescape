@@ -12,9 +12,6 @@
 #include "enemies.h"
 #include "levelrows.h"
 
-#define TIME_DEBUG	1
-
-
 // The charpad resource in lz compression, without the need
 // for binary export
 const char LevelFont[] = {
@@ -232,7 +229,7 @@ void rebuild_screen(char phase)
 	}
 }
 
-char LevelScrollFont[4][2][2][32];
+char LevelScrollFont[2][2][4 * 32];
 #pragma align(LevelScrollFont, 256)
 
 
@@ -294,10 +291,10 @@ void display_init(void)
 			for(char i=0; i<4; i++)
 			{
 				// Cache scrolled lines
-				LevelScrollFont[i][k][0][j     ] = u >> 8;
-				LevelScrollFont[i][k][0][j + 16] = u >> 8;
-				LevelScrollFont[i][k][1][j     ] = u & 0xff;
-				LevelScrollFont[i][k][1][j + 16] = u & 0xff;
+				LevelScrollFont[k][0][i * 32 + j     ] = u >> 8;
+				LevelScrollFont[k][0][i * 32 + j + 16] = u >> 8;
+				LevelScrollFont[k][1][i * 32 + j     ] = u & 0xff;
+				LevelScrollFont[k][1][i * 32 + j + 16] = u & 0xff;
 
 				// Rotate two bits to the left
 				u = (u << 2) | (u >> 14);
@@ -380,7 +377,9 @@ void display_loop(void)
 
 	if (!(phase & 7))
 	{
+#if TIME_DEBUG
 		vic.color_border = VCOL_YELLOW;
+#endif
 
 	 	if ((screeny & 3) == 2)
 		{
@@ -420,7 +419,9 @@ void display_loop(void)
 		}
 		wave_loop();
 
+#if TIME_DEBUG
 		vic.color_border = VCOL_BLUE;		
+#endif
 	}
 
 #if TIME_DEBUG
@@ -428,12 +429,21 @@ void display_loop(void)
 #endif
 	vspr_sort();
 #if TIME_DEBUG
-	vic.color_border = VCOL_LT_BLUE;
+	vic.color_border = VCOL_RED;
 #endif
 
 	music_play();
+#if TIME_DEBUG
+	vic.color_border = VCOL_LT_BLUE;
+#endif
+
+	score_update();
 
 	rirq_wait();
+
+#if TIME_DEBUG
+	vic.color_border = VCOL_ORANGE;
+#endif
 
 	if (!(phase & 7))
 	{
@@ -452,40 +462,71 @@ void display_loop(void)
 	// sort raster IRQs
 	rirq_sort();
 
+#if TIME_DEBUG
+	vic.color_border = VCOL_PURPLE;
+#endif
+
 	// Offset of parallax scrolled regions, half in x due
 	// to multicolor mode
 	char	ty = (phase >> 1) & 15;
 	char	tx = (px >> 2) & 7;
 
-	// Char and pixel components of x
-	char	rx = tx >> 2;
-	tx &= 3;
+	ty += 32 * (tx & 3);
 
-	// Copy the char data from the cached shifted chars
-	for(char i=0; i<16; i++)
+	if (tx & 4)
 	{
-		Charset[i +  0] = LevelScrollFont[tx][0][1 - rx][ty];
-		Charset[i + 16] = LevelScrollFont[tx][0][    rx][ty];
+		// Copy the char data from the cached shifted chars
+		for(char i=0; i<16; i++)
+		{
+			Charset[i +  0] = LevelScrollFont[0][0][ty];
+			Charset[i + 16] = LevelScrollFont[0][1][ty];
 
-		Charset[i + 32] = LevelScrollFont[tx][1][1 - rx][ty];
-		Charset[i + 48] = LevelScrollFont[tx][1][    rx][ty];
+			Charset[i + 32] = LevelScrollFont[1][0][ty];
+			Charset[i + 48] = LevelScrollFont[1][1][ty];
 
-		// Next line
-		ty++;
+			// Next line
+			ty++;
+		}
+	}
+	else
+	{
+		for(char i=0; i<16; i++)
+		{
+			Charset[i +  0] = LevelScrollFont[0][1][ty];
+			Charset[i + 16] = LevelScrollFont[0][0][ty];
+
+			Charset[i + 32] = LevelScrollFont[1][1][ty];
+			Charset[i + 48] = LevelScrollFont[1][0][ty];
+
+			// Next line
+			ty++;
+		}		
 	}
 
 	static const char yo[4] = {10, 23, 45, 38};
+	static const char xmask[16] = {
+#for(i, 16) 0x55 | (128 >> (i & 6)),
+	};
+	static const char yoffset[64] = {
+#for(i, 64) (i & 7) + (i * 2 & 0x70),
+	};
 
+#if TIME_DEBUG
+	vic.color_border = VCOL_YELLOW;
+#endif
 	for(char i=0; i<4; i++)
 	{
 		char x = (4 * i - px) & 15;
 		char y = (yo[i] - phase) & 63;
 
-		char p = (y & 7) + (y * 2 & 0x70) + (x & 0x8);
+		char p = yoffset[y] | (x & 8); //(y & 7) + (y * 2 & 0x70) + (x & 0x8);
 		Charset[64 + starp[i]] = 0x55;
 		starp[i] = p;
-		Charset[64 + p] = 0x55 | (128 >> (x & 6));
+		Charset[64 + p] = xmask[x]; //0x55 | (128 >> (x & 6));
 	}
+#if TIME_DEBUG
+	vic.color_border = VCOL_BLUE;
+#endif
 
 
 	music_play();
@@ -546,8 +587,6 @@ void tile_redraw(char sy, const char * tis)
 		x++;
 	}
 
-	vic.color_border++;
-
 	char scy = screeny;
 	if ((phase & 7) == 7)
 		scy++;
@@ -575,8 +614,6 @@ void tile_redraw(char sy, const char * tis)
 			sp += 40;
 			scl += 64;
 		}
-
-		vic.color_border++;
 
 		char y0 = (y - scy - 1) & 31;
 		n = 4;
@@ -724,6 +761,8 @@ void tile_collide(char x, char y)
 
 	if (ti == 34)
 	{
+		score_inc(15);
+
 		for(char i=0; i<16; i++)
 		{
 			ti = lp[i];
@@ -750,6 +789,8 @@ void tile_collide(char x, char y)
 	}
 	else
 	{
+		score_inc(3);
+
 		lp[sx] = ti;
 		tile_replace(sx, sy, ti);
 	}

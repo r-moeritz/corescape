@@ -1,5 +1,7 @@
 #pragma once
 
+#define TIME_DEBUG	0
+
 extern char bulls, bulle, bulld;
 
 extern __striped struct Bullet
@@ -36,6 +38,8 @@ enum EnemyType
 
 	ET_RETRO,
 	ET_CORVETTE,
+
+	ET_STAR,
 
 	NUM_ENEMY_TYPES
 };
@@ -78,6 +82,15 @@ enum EnemyWave
 	WAVE_CORVETTE_2,
 	WAVE_CORVETTE_3,
 	WAVE_CORVETTE_4,
+
+	WAVE_STAR_1,
+	WAVE_STAR_2,
+	WAVE_STAR_3,
+	WAVE_STAR_4,
+	WAVE_STAR_5,
+	WAVE_STAR_6,
+	WAVE_STAR_7,
+	WAVE_STAR_8,
 };
 
 extern __striped struct Enemy
@@ -95,7 +108,7 @@ void enemies_move(void);
 
 void enemies_check(void);
 
-bool enemies_collide(char hx, char y);
+char enemies_collide(char hx, char y);
 
 void enemies_add(int x, int y, EnemyType type, int p0, int p1);
 

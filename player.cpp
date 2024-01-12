@@ -2,6 +2,8 @@
 #include <c64/sprites.h>
 #include "player.h"
 #include "display.h"
+#include "status.h"
+#include "enemies.h"
 
 int shipx, shipy;
 char shots, shotd;
@@ -145,10 +147,23 @@ void player_move(void)
 			}
 		}
 
-		if (enemies_collide(hx, shipy))
+		if (playerState == PLST_ACTIVE)
 		{
-			playerState = PLST_EXPLODING;
-			playerStateCount = 64;
+			char ei = enemies_collide(hx, shipy);
+			if (ei != 0xff)
+			{
+				if (enemies[ei].type == ET_STAR)
+				{
+					ships_inc();
+					enemies[ei].type = ET_FREE;
+					vspr_hide(ei + 8);
+				}
+				else
+				{
+					playerState = PLST_EXPLODING;
+					playerStateCount = 64;
+				}
+			}
 		}
 	}
 
