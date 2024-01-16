@@ -25,6 +25,8 @@ static char GameOverText[] = S"GAMEOVER";
 
 int main(void)
 {
+	assets_init();
+
 	display_init();
 
 	for(char i=0; i<6; i++)
@@ -118,6 +120,12 @@ int main(void)
 				music_volume(15 - i);
 				for(int j=0; j<10; j++)
 				{
+					if (playerState != PLST_DESTROYED && shipy > 20)
+					{
+						shipy -= i;
+						vspr_move(0, shipx - vscreenx, shipy);
+					}
+
 					score_update();
 					enemies_move();
 					vspr_sort();
@@ -129,6 +137,7 @@ int main(void)
 					music_play();
 					vic_waitBelow(100);					
 					music_play();
+
 				}
 			}
 

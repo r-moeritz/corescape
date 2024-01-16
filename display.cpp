@@ -14,10 +14,6 @@
 
 // The charpad resource in lz compression, without the need
 // for binary export
-const char LevelFont[] = {
-	#embed ctm_chars lzo "tiles.ctm"
-};
-
 __export const char LevelAttr[] = {
 	#embed ctm_attr1 "tiles.ctm"
 };
@@ -34,10 +30,6 @@ const char LevelMap[] = {
 };
 #pragma align(LevelMap, 256)
 
-// Ship sprite image
-char const SpriteImages[] = {
-	#embed spd_sprites lzo "sprites.spd"
-};
 
 // Background tiles
 const char BackgroundFont[] = {
@@ -45,8 +37,12 @@ const char BackgroundFont[] = {
 };
 
 // Temporary buffer for expanded tiles
+#pragma bss(xbss)
 char tile_buffer[32][64];
+#pragma bss(bss)
+
 #pragma align(tile_buffer, 256)
+
 
 __striped char * const tilerows[32 + 4] = {
 #for(i,36) tile_buffer[i & 31],
@@ -55,8 +51,10 @@ __striped char * const tilerows[32 + 4] = {
 const char * level_seq;
 const char * level_wave;
 
+#pragma bss(xbss)
 char tile_cache[8][16];
 #pragma align(tile_cache, 256)
+#pragma bss(bss)
 
 void copy_screen_rows3(char * sp, char sx, char sy)
 {
@@ -233,8 +231,10 @@ void rebuild_screen(char phase)
 	}
 }
 
+#pragma bss(xbss)
 char LevelScrollFont[2][2][4 * 32];
 #pragma align(LevelScrollFont, 256)
+#pragma bss(bss)
 
 
 char phase;
@@ -342,20 +342,6 @@ void display_fade_in(void)
 
 void display_init(void)
 {
-	cia_init();
-
-	mmap_trampoline();
-
-	mmap_set(MMAP_RAM);
-
-	// Expand charset
-	oscar_expand_lzo(Sprites, SpriteImages);
-
-	mmap_set(MMAP_NO_ROM);
-
-	// Expand charset
-	oscar_expand_lzo(Charset, LevelFont);
-
 	// White flash char, can't use 255 - would clobber up interrupt vector
 	for(char i=0; i<8; i++)
 		Charset[254 * 8 + i] = 0xff;
