@@ -14,6 +14,8 @@ static char * const Charset = (char *)0xf800;
 static char * const Color = (char *)0xd800;
 
 extern const char LevelAttr[];
+extern const char LevelFont[];
+extern const char LevelTiles[];
 
 extern char tile_buffer[32][64];
 
@@ -24,6 +26,9 @@ extern char screenx, screeny;
 extern char screeni;
 extern char phase;
 extern int vscreenx;
+
+#define NUM_TILES	64
+
 
 #define SPIMAGE_PLAYER			0x40
 #define SPIMAGE_SHOT			0x43
@@ -74,6 +79,10 @@ void rebuild_screen(char phase);
 void display_loop(void);
 
 void tile_remove(char x, char y);
+
+void display_fade_out(void);
+
+void display_fade_in(void);
 
 #pragma compile("display.cpp")
 

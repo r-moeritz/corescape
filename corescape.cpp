@@ -18,19 +18,26 @@
 #include "levelseq3.h"
 #include "levelseq4.h"
 #include "status.h"
+#include "intro.h"
 
 static char LevelText[] = S"STAGE 1";
+static char GameOverText[] = S"GAMEOVER";
 
 int main(void)
 {
 	display_init();
 
-	music_init(TUNE_MAIN_1);
+	for(char i=0; i<6; i++)
+		highscore[i] = 0;
 
 	bool	trainer_mode = false;
 
 	for(;;)
 	{
+		music_init(TUNE_HIGHSCORE);
+		music_volume(15);
+		intro_play();			
+
 		score_init();
 
 		for(char level = 0; level < 4; level++)
@@ -61,6 +68,8 @@ int main(void)
 
 			player_init();
 			enemies_init();
+
+			display_fade_in();
 
 			LevelText[6] = S'1' + level;
 			for(char i=0; i<7; i++)
@@ -109,9 +118,16 @@ int main(void)
 				music_volume(15 - i);
 				for(int j=0; j<10; j++)
 				{
-					vic_waitBottom();
+					score_update();
+					enemies_move();
+					vspr_sort();
+
+					rirq_wait();
+					vspr_update();
+					rirq_sort();
+
 					music_play();
-					vic_waitLine(100);					
+					vic_waitBelow(100);					
 					music_play();
 				}
 			}
@@ -119,8 +135,51 @@ int main(void)
 			music_volume(0);
 
 			if (playerState == PLST_DESTROYED && num_ships == 0)
+			{
+				enemies_init();
+
+				unsigned x = 350;
+				for(char i=0; i<8; i++)
+				{
+					text_sprimage(SPIMAGE_TEXT_1 + i, GameOverText[i]);
+					enemies_add(x, 100, ET_LEVEL, i, 0);
+					x += 20;
+					if (i == 3)
+						x += 20;
+				}
+
+				music_init(TUNE_GAMEOVER);
+				music_volume(15);
+
+
+				for(int i=0; i<15; i++)
+				{
+//					music_volume(15 - i);
+					for(int j=0; j<20; j++)
+					{
+						score_update();
+						enemies_move();
+						vspr_sort();
+
+						rirq_wait();
+						vspr_update();
+						rirq_sort();
+
+						music_play();
+						vic_waitBelow(100);					
+						music_play();
+					}
+				}
+				display_fade_out();
+
 				break;			
+			}
+
+			display_fade_out();
+
 		}
+
+		score_check();
 	}
 
 	return 0;

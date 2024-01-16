@@ -159,6 +159,27 @@ void score_update(void)
 	}
 }
 
+bool score_check(void)
+{
+	while (score_acc)
+		score_update();
+
+	char i = 0;
+	while (i < 6 && score[i] == highscore[i])
+		i++;
+	if (i < 6 && score[i] > highscore[i])
+	{
+		do {
+			highscore[i] = score[i];
+			i++;
+		} while (i < 6);
+
+		return true;
+	}
+	else
+		return false;
+}
+
 static const char nibble[] = {
 	0x00, 0x03, 0x0c, 0x0f,
 	0x30, 0x33, 0x3c, 0x3f,

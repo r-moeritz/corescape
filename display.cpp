@@ -92,8 +92,6 @@ void copy_screen_rows4(char * sp, char sx, char sy)
 	}	
 }
 
-#define NUM_TILES	64
-
 // Expand a row of tiles into tile buffer
 void expand_tiles(char sy, char ry, char dy)
 {
@@ -269,6 +267,77 @@ void background_init(char bg)
 			}
 		}
 	}
+
+	char ty = 0;
+	for(char i=0; i<16; i++)
+	{
+		Charset[i +  0] = LevelScrollFont[0][1][ty];
+		Charset[i + 16] = LevelScrollFont[0][0][ty];
+
+		Charset[i + 32] = LevelScrollFont[1][1][ty];
+		Charset[i + 48] = LevelScrollFont[1][0][ty];
+
+		// Next line
+		ty++;
+	}			
+}
+
+void display_fade_out(void)
+{
+	vic_waitBottom();
+	vic_waitTop();
+	vic.color_border = VCOL_BLUE;
+	vic.color_back = VCOL_LT_BLUE;
+	vic.color_back1 = VCOL_BLACK;
+	vic.color_back2 = VCOL_LT_GREY;
+
+	vic_waitFrames(2);
+	vic_waitTop();
+
+	vic.spr_enable = 0x00;
+	vic.color_border = VCOL_LT_BLUE;
+	vic.color_back = VCOL_WHITE;
+	vic.color_back1 = VCOL_MED_GREY;
+	vic.color_back2 = VCOL_WHITE;
+
+	vic_waitFrames(2);
+	vic_waitTop();
+
+	vic.color_border = VCOL_WHITE;
+	vic.color_back = VCOL_WHITE;
+	vic.color_back1 = VCOL_WHITE;
+	vic.color_back2 = VCOL_WHITE;
+
+	vic_waitBottom();
+}
+
+void display_fade_in(void)
+{
+	vic_waitBottom();
+	vic_waitTop();
+	vic.color_border = VCOL_WHITE;
+	vic.color_back = VCOL_WHITE;
+	vic.color_back1 = VCOL_WHITE;
+	vic.color_back2 = VCOL_WHITE;
+
+	vic_waitFrames(2);
+	vic_waitTop();
+
+	vic.color_border = VCOL_LT_BLUE;
+	vic.color_back = VCOL_WHITE;
+	vic.color_back1 = VCOL_MED_GREY;
+	vic.color_back2 = VCOL_WHITE;
+
+	vic_waitFrames(2);
+	vic_waitTop();
+
+	vic.spr_enable = 0xff;
+	vic.color_border = VCOL_BLUE;
+	vic.color_back = VCOL_LT_BLUE;
+	vic.color_back1 = VCOL_BLACK;
+	vic.color_back2 = VCOL_LT_GREY;
+
+	vic_waitBottom();
 }
 
 void display_init(void)
@@ -297,10 +366,10 @@ void display_init(void)
 	memset(Screen1, 0, 1000);
 
 	// Background and border colors
-	vic.color_border = VCOL_BLUE;
-	vic.color_back = VCOL_LT_BLUE;
-	vic.color_back1 = VCOL_BLACK;
-	vic.color_back2 = VCOL_LT_GREY;
+	vic.color_border = VCOL_WHITE;
+	vic.color_back = VCOL_WHITE;
+	vic.color_back1 = VCOL_WHITE;
+	vic.color_back2 = VCOL_WHITE;
 
 	// Set VIC to show custom screen with custom charset and multicolor
 	vic_setmode(VICM_TEXT_MC, Screen0, Charset);
@@ -351,6 +420,7 @@ void level_init(const char * seq, const char * wave, char lsize)
 		expand_tiles(levely, 2, ((levely - 1) & 7) * 4);
 		expand_tiles(levely, 3, ((levely - 1) & 7) * 4);
 	}
+
 	px = 4;
 	dx = 0;
 	ndx = 0;
@@ -359,7 +429,16 @@ void level_init(const char * seq, const char * wave, char lsize)
 
 	for(char i=0; i<8; i++)
 		rebuild_screen(i);
-	phase = 7;
+
+	screeni = 1 - screeni;
+	vic.memptr = (vic.memptr & 0xee) | (screeni << 4);
+	vspr_screen(screeni ? Screen1 : Screen0);
+
+	vic.ctrl1 = VIC_CTRL1_DEN;
+	vic.ctrl2 = VIC_CTRL2_MCM | (px & 7);	
+
+	phase = 0;
+	rebuild_screen(phase);
 }
 
 void display_loop(void)

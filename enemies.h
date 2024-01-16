@@ -123,6 +123,8 @@ enum EnemyWave
 	WAVE_COINS,
 };
 
+extern const signed char sintab[];
+
 extern __striped struct Enemy
 {
 	EnemyType	type;
