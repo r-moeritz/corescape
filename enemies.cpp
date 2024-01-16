@@ -3,11 +3,11 @@
 #include "enemies.h"
 #include "player.h"
 #include "status.h"
+#include "display.h"
 
 static const signed char sintab[] = {
 0, 4, 9, 13, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 57, 60, 64, 67, 70, 72, 75, 77, 79, 81, 83, 85, 86, 87, 88, 89, 90, 90, 90, 90, 90, 89, 88, 87, 86, 85, 83, 81, 79, 77, 75, 72, 70, 67, 64, 60, 57, 54, 50, 46, 42, 38, 34, 30, 26, 22, 18, 13, 9, 4, 0, -4, -9, -13, -18, -22, -26, -30, -34, -38, -42, -46, -50, -54, -57, -60, -64, -67, -70, -72, -75, -77, -79, -81, -83, -85, -86, -87, -88, -89, -90, -90, -90, -90, -90, -89, -88, -87, -86, -85, -83, -81, -79, -77, -75, -72, -70, -67, -64, -60, -57, -54, -50, -46, -42, -38, -34, -30, -26, -22, -18, -13, -9, -4
 };
-
 
 char bulls, bulle, bulld;
 char enemys, enemye;
@@ -29,7 +29,7 @@ void enemies_init(void)
 		vspr_hide(i + 8);
 }
 
-void enemies_add(int x, int y, EnemyType type, int p0, int p1)
+char enemies_alloc(void)
 {
 	char i;
 	if ((char)(enemys + 8) != enemye)
@@ -43,8 +43,24 @@ void enemies_add(int x, int y, EnemyType type, int p0, int p1)
 		while (i < 8 && enemies[i].type != ET_FREE)
 			i++;
 		if (i == 8)
-			return;
+			return 0xff;
 	}
+
+	return i;
+}
+
+static const signed char BossletX[] = {-48, -24, 0, 24, 48};
+static const signed char BossletY[] = {-4, -2, 21, -2, -4};
+static const char BossletI[] = {SPIMAGE_BOSS, SPIMAGE_BOSS + 1, SPIMAGE_BOSS + 5, SPIMAGE_BOSS + 3, SPIMAGE_BOSS + 4};
+static const char BossletC[] = {VCOL_DARK_GREY, VCOL_RED, VCOL_PURPLE, VCOL_RED, VCOL_DARK_GREY};
+static const EnemyType BossletT[] = {ET_BOSS_LASER, ET_BOSS_MISSILE, ET_BOSS_FRONT, ET_BOSS_MISSILE, ET_BOSS_LASER};
+
+char enemies_add(int x, int y, EnemyType type, int p0, int p1)
+{
+
+	char i = enemies_alloc();
+	if (i == 0xff)
+		return 0xff;
 
 	auto	e = enemies + i;
 
@@ -59,32 +75,35 @@ void enemies_add(int x, int y, EnemyType type, int p0, int p1)
 	e->vx = 0;
 	e->p0 = p0;
 	e->p1 = p1;
+	e->hits = 1;
+	e->ext = 0xff;
+	e->flash = 0;
 
 	switch (e->type)
 	{
 	case ET_UFO:
-		vspr_set(i + 8, x - vscreenx, y, 68, i + 2);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_UFO, i + 2);
 		break;
 	case ET_GUN:
-		vspr_set(i + 8, x - vscreenx, y, 71, VCOL_LT_GREY);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_GUN, VCOL_LT_GREY);
 		e->cnt = 0;
 		break;
 	case ET_EVDOOR:
-		vspr_set(i + 8, x - vscreenx, y, 108, VCOL_YELLOW);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_EVDOOR, VCOL_YELLOW);
 		break;
 	case ET_PINGPONG:
-		vspr_set(i + 8, x - vscreenx, y, 112, VCOL_ORANGE);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_PINGPONG, VCOL_ORANGE);
 		e->vx = 5;
 		break;
 	case ET_LEFTGUARD:
-		vspr_set(i + 8, x - vscreenx, y, 73, VCOL_YELLOW);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_LEFTGUARD, VCOL_YELLOW);
 		break;
 	case ET_RIGHTGUARD:
-		vspr_set(i + 8, x - vscreenx, y, 74, VCOL_YELLOW);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_RIGHTGUARD, VCOL_YELLOW);
 		break;
 	case ET_SPARKSPHERE:
 		e->phase = 0x40;
-		vspr_set(i + 8, x - vscreenx, y, 116, VCOL_YELLOW);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_SPHERE, VCOL_YELLOW);
 		break;
 	case ET_ALIEN_1:
 	case ET_ALIEN_2:
@@ -92,34 +111,118 @@ void enemies_add(int x, int y, EnemyType type, int p0, int p1)
 	case ET_ALIEN_4:
 		e->cnt = y;
 		e->y = 28;
-		vspr_set(i + 8, x - vscreenx, 28, 120 + e->type - ET_ALIEN_1, VCOL_GREEN);
+		vspr_set(i + 8, x - vscreenx, 28, SPIMAGE_ALIEN + e->type - ET_ALIEN_1, VCOL_GREEN);
 		break;
 	case ET_POPCORN:
-		vspr_set(i + 8, x - vscreenx, 28, 124, VCOL_ORANGE);
+		vspr_set(i + 8, x - vscreenx, 28, SPIMAGE_POPCORN, VCOL_ORANGE);
 		break;		
 	case ET_BOMBER_LEFT:
-		vspr_set(i + 8, x - vscreenx, y, 132, VCOL_PURPLE);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_BOMBER_LEFT, VCOL_PURPLE);
 		break;		
 	case ET_BOMBER_RIGHT:
-		vspr_set(i + 8, x - vscreenx, y, 136, VCOL_PURPLE);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_BOMBER_RIGHT, VCOL_PURPLE);
 		break;		
 	case ET_SHIP_1:
 	case ET_SHIP_2:
 	case ET_SHIP_3:
 	case ET_SHIP_4:
-		vspr_set(i + 8, x - vscreenx, y, 140 + e->type - ET_SHIP_1, VCOL_LT_GREY);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_SHIP_1 + 4 * (e->type - ET_SHIP_1), VCOL_LT_GREY);
 		break;
 	case ET_RETRO:
-		vspr_set(i + 8, x - vscreenx, y, 144, VCOL_YELLOW);
+		vspr_set(i + 8, x - vscreenx, y,  SPIMAGE_RETRO, VCOL_YELLOW);
 		e->cnt = 16 + (rand() & 15);
 		break;
 	case ET_CORVETTE:
-		vspr_set(i + 8, x - vscreenx, y, 144, VCOL_YELLOW);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_CORVETTE, VCOL_YELLOW);
 		break;
 	case ET_STAR:
-		vspr_set(i + 8, x - vscreenx, y, 96, VCOL_YELLOW);
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_STAR, VCOL_YELLOW);
+		break;
+	case ET_COIN:
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_COIN, VCOL_YELLOW);
+		break;
+	case ET_LASER:
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_LASER, VCOL_YELLOW);
+		break;		
+	case ET_MISSILE:
+		e->vy = - 8;
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_MISSILE, VCOL_YELLOW);		
+		break;		
+	case ET_DESTROYER:
+		{
+			char j = enemies_alloc();
+			if (j == 0xff)
+			{
+				e->type = ET_FREE;
+				return 0xff;
+			}
+
+			vspr_set(i + 8, x - vscreenx     , y, SPIMAGE_DESTROYER + 0, VCOL_YELLOW);
+			vspr_set(j + 8, x - vscreenx + 24, y, SPIMAGE_DESTROYER + 1, VCOL_YELLOW);
+
+			e->phase += j;
+			e->hits = 8;
+			e->ext = j;
+			enemies[j].type = ET_EXT;
+
+		}
+		break;
+	case ET_FRIGATE:
+		{
+			char j = enemies_alloc();
+			if (j == 0xff)
+			{
+				e->type = ET_FREE;
+				return 0xff;
+			}
+
+			vspr_set(i + 8, x - vscreenx     , y, SPIMAGE_FRIGATE + 0, VCOL_YELLOW);
+			vspr_set(j + 8, x - vscreenx + 24, y, SPIMAGE_FRIGATE + 1, VCOL_YELLOW);
+
+			e->phase += j;
+			e->hits = 8;
+			e->ext = j;
+			enemies[j].type = ET_EXT;
+
+		}
+		break;
+	case ET_BOSS:
+		{
+			char	bl[5];
+
+			for(char j=0; j<5; j++)
+			{
+				char t = enemies_alloc();
+				bl[j] = t;
+				auto	b = enemies + t;
+				b->type = BossletT[j];
+				b->vx = BossletX[j];
+				b->vy = BossletY[j];
+				b->x = x + b->vx;
+				b->y = y + b->vy;
+				b->cnt = 0;
+				b->ext = i;
+				b->hits = 8;
+				vspr_set(t + 8, b->x - vscreenx, b->y, BossletI[j], BossletC[j]);
+			}
+
+			enemies[bl[1]].link = bl[0];
+			enemies[bl[3]].link = bl[4];
+
+			vspr_set(i + 8, x - vscreenx, y, SPIMAGE_BOSS + 2, VCOL_PURPLE);
+
+			e->ext = bl[2];
+			e->hits = 32;
+			break;
+		}
+	case ET_LEVEL:
+		e->x <<= 2;
+		vspr_set(i + 8, x, y, SPIMAGE_TEXT_1 + p0, VCOL_YELLOW);
+		e->vx = -47;
 		break;
 	}
+
+	return i;
 }
 
 const int StarPos[] = {
@@ -189,8 +292,49 @@ void wave_start(EnemyWave wave)
 	case WAVE_STAR_8:
 		enemies_add(StarPos[(wave - WAVE_STAR_1) & 3], 14 + 64 * (((wave - WAVE_STAR_1) >> 2) & 1) , ET_STAR, 0, 0);
 		break;
+	case WAVE_DESTROYER_1:
+		enemies_add(128, 30, ET_DESTROYER, 0, 0);
+		break;
+	case WAVE_DESTROYER_2:
+		enemies_add(384, 30, ET_DESTROYER, 0, 0);
+		break;
+	case WAVE_DESTROYER_3:
+		enemies_add(128, 30, ET_DESTROYER, 0, 0);
+		enemies_add(384, 30, ET_DESTROYER, 0, 0);
+		break;
+	case WAVE_DESTROYER_4:	
+		enemies_add(128,  30, ET_DESTROYER, 0, 0);
+		enemies_add(256, 30, ET_DESTROYER, 0, 0);
+		enemies_add(384, 30, ET_DESTROYER, 0, 0);
+		break;
+	case WAVE_FRIGATE_1:
+		enemies_add(128, 30, ET_FRIGATE, 0, 0);
+		break;
+	case WAVE_FRIGATE_2:
+		enemies_add(384, 30, ET_FRIGATE, 0, 0);
+		break;
+	case WAVE_FRIGATE_3:
+		enemies_add(128, 30, ET_FRIGATE, 0, 0);
+		enemies_add(384, 30, ET_FRIGATE, 0, 0);
+		break;
+	case WAVE_FRIGATE_4:	
+		enemies_add(128,  30, ET_FRIGATE, 0, 0);
+		enemies_add(256, 30, ET_FRIGATE, 0, 0);
+		enemies_add(384, 30, ET_FRIGATE, 0, 0);
+		break;
 
-	}	
+	case WAVE_BOSS:
+		enemies_add(256, 10, ET_BOSS, 0, 0);
+		break;
+
+	case WAVE_COINS:
+		if (enemys == enemye)
+		{
+			for(char i=0; i<8; i++)
+				enemies_add(128 + 32 * i, 20 + (rand() & 31), ET_COIN, 0, 0);
+		}
+		break;
+	}
 }
 
 void wave_loop(void)
@@ -281,6 +425,11 @@ char enemies_collide(char hx, char y)
 			if ((e->phase & 63) >= 48 && (char)((e->x >> 1) + 4 - hx) < 8 && (char)(e->y + 32 - y) < 32)
 				return i;
 			break;
+		case ET_LASER:
+		case ET_MISSILE:
+			if ((char)((e->x >> 1) + 4 - hx) < 8 && (char)(e->y + 32 - y) < 32)
+				return i;
+			break;
 		case ET_PINGPONG:
 			if ((char)((e->x >> 1) + 16 - hx) < 32 && (char)(e->y + 12 - y) < 16)
 				return i;
@@ -301,7 +450,19 @@ char enemies_collide(char hx, char y)
 		case ET_RETRO:
 		case ET_CORVETTE:
 		case ET_STAR:
+		case ET_COIN:
+		case ET_BOSS:
+		case ET_BOSS_2:
+		case ET_BOSS_3:
+		case ET_BOSS_MISSILE:
+		case ET_BOSS_LASER:
+		case ET_BOSS_SUPPORT:
 			if ((char)((e->x >> 1) + 8 - hx) < 16 && (char)(e->y + 14 - y) < 28)
+				return i;
+			break;
+		case ET_DESTROYER:
+		case ET_FRIGATE:
+			if ((char)((e->x >> 1) + 8 - hx) < 28 && (char)(e->y + 14 - y) < 28)
 				return i;
 			break;
 		}
@@ -336,32 +497,82 @@ static const char EnemyFlags[NUM_ENEMY_TYPES] =
 
 	[ET_RETRO] = ETF_SHOT,
 	[ET_CORVETTE] = ETF_SHOT,
+
+	[ET_DESTROYER] = ETF_SHOT,
+	[ET_FRIGATE] = ETF_SHOT,
+
+	[ET_BOSS_MISSILE] = ETF_SHOT,
+	[ET_BOSS_SUPPORT] = ETF_SHOT,
+	[ET_BOSS_3] = ETF_SHOT,
+};
+
+static const char EnemyWidth[NUM_ENEMY_TYPES] = 
+{
+	[ET_UFO] = 20,
+	[ET_GUN] = 20,
+	[ET_LEFTGUARD] = 20,
+	[ET_RIGHTGUARD] = 20,
+
+	[ET_ALIEN_1] = 20,
+	[ET_ALIEN_2] = 20,
+	[ET_ALIEN_3] = 20,
+	[ET_ALIEN_4] = 20,
+
+	[ET_POPCORN] = 20,
+
+	[ET_BOMBER_LEFT] = 20,
+	[ET_BOMBER_RIGHT] = 20,
+
+	[ET_SHIP_1] = 20,
+	[ET_SHIP_2] = 20,
+	[ET_SHIP_3] = 20,
+	[ET_SHIP_4] = 20,
+
+	[ET_RETRO] = 20,
+	[ET_CORVETTE] = 20,
+
+	[ET_DESTROYER] = 44,
+	[ET_FRIGATE] = 44,
+
+	[ET_BOSS] = 20,
+	[ET_BOSS_2] = 20,
+	[ET_BOSS_3] = 20,
+	[ET_BOSS_MISSILE] = 20,
+	[ET_BOSS_LASER] = 20,
+	[ET_BOSS_FRONT] = 20,
+	[ET_BOSS_SUPPORT] = 20,
 };
 
 static const unsigned EnemyScore[NUM_ENEMY_TYPES] =
 {
-	[ET_UFO] = 10,
-	[ET_GUN] = 5,
-	[ET_LEFTGUARD] = 20,
-	[ET_RIGHTGUARD] = 20,
+	[ET_UFO] = 100,
+	[ET_GUN] = 20,
+	[ET_LEFTGUARD] = 50,
+	[ET_RIGHTGUARD] = 50,
 
-	[ET_ALIEN_1] = 25,
-	[ET_ALIEN_2] = 25,
-	[ET_ALIEN_3] = 25,
-	[ET_ALIEN_4] = 25,
+	[ET_ALIEN_1] = 100,
+	[ET_ALIEN_2] = 100,
+	[ET_ALIEN_3] = 100,
+	[ET_ALIEN_4] = 100,
 
 	[ET_POPCORN] = 10,
 
-	[ET_BOMBER_LEFT] = 25,
-	[ET_BOMBER_RIGHT] = 25,
+	[ET_BOMBER_LEFT] = 50,
+	[ET_BOMBER_RIGHT] = 50,
 
-	[ET_SHIP_1] = 50,
-	[ET_SHIP_2] = 55,
-	[ET_SHIP_3] = 60,
-	[ET_SHIP_4] = 65,
+	[ET_SHIP_1] = 100,
+	[ET_SHIP_2] = 150,
+	[ET_SHIP_3] = 200,
+	[ET_SHIP_4] = 300,
 
-	[ET_RETRO] = 100,
-	[ET_CORVETTE] = 33,
+	[ET_RETRO] = 250,
+	[ET_CORVETTE] = 500,
+	[ET_DESTROYER] = 1000,
+	[ET_FRIGATE] = 1500,
+
+	[ET_BOSS_3] = 20000,
+	[ET_BOSS_MISSILE] = 1000,
+	[ET_BOSS_SUPPORT] = 5000,
 };
 
 void enemies_check(void)
@@ -381,13 +592,31 @@ void enemies_check(void)
 				{
 					if ((char)(s->y - e->y) < 20)
 					{
-						if ((unsigned)(s->x - e->x + 7) < 20)
+						if ((unsigned)(s->x - e->x + 7) < EnemyWidth[e->type])
 						{
 							s->y = 0;
 							vspr_hide(j + 1);
-							score_inc(EnemyScore[e->type]);
-							e->type = ET_EXPLOSION;
-							e->phase = 0;
+							e->flash = 4;
+							e->hits--;							
+							if (e->hits == 0)
+							{
+								score_inc(EnemyScore[e->type]);
+								if (e->type == ET_BOSS_MISSILE)
+								{
+									enemies[e->link].type = ET_BOSS_SUPPORT;
+									enemies[e->link].ext = 0xff;
+									enemies[e->link].vx >>= 1;
+									enemies[e->link].vy = -8;
+									enemies[e->ext].type++;
+								}
+								else if (e->ext != 0xff)
+								{
+									enemies[e->ext].type = ET_EXPLOSION;
+									enemies[e->ext].phase = 0;
+								}
+								e->type = ET_EXPLOSION;
+								e->phase = 0;
+							}
 							break;
 						}
 					}
@@ -411,7 +640,7 @@ void bullet_add(int x, char y, int dx, char dy)
 		bullet[j].y = y;
 		bullet[j].dx = dx;
 		bullet[j].dy = dy;
-		vspr_set(j + 16, x - vscreenx, y, 69, VCOL_YELLOW);
+		vspr_set(j + 16, x - vscreenx, y, SPIMAGE_BULLET, VCOL_YELLOW);
 	}
 }
 
@@ -421,6 +650,14 @@ static const char BulletColors[] =
 static const char CorvetteColor[] = 
 	{VCOL_PURPLE, VCOL_YELLOW, VCOL_PURPLE, VCOL_PURPLE, 
 	 VCOL_PURPLE, VCOL_BLUE, VCOL_PURPLE, VCOL_PURPLE };
+
+static const char DestroyerColor[] = 
+	{VCOL_DARK_GREY, VCOL_LT_GREY, VCOL_DARK_GREY, VCOL_DARK_GREY, 
+	 VCOL_DARK_GREY, VCOL_RED, VCOL_DARK_GREY, VCOL_DARK_GREY };
+
+static const char FrigateColor[] = 
+	{VCOL_RED, VCOL_YELLOW, VCOL_RED, VCOL_RED, 
+	 VCOL_RED, VCOL_PURPLE, VCOL_RED, VCOL_RED };
 
 static const signed char sphere_dxy[16] = {3, 2, 1, 0, 0, -1, -2, -3, -3, -2, -1, 0, 0, 1, 2, 3};
 
@@ -507,7 +744,7 @@ void enemies_move(void)
 					else if (2 * dx - dy > 0)
 						dir = 1;
 
-					vspr_image(i + 8, dir + 71);
+					vspr_image(i + 8, dir + (SPIMAGE_GUN + 1));
 					if (!(rand() & 63))
 						bullet_add(e->x + 8 + 12 * dir, e->y + 20, 16 * dir, 2);
 				}
@@ -561,7 +798,7 @@ void enemies_move(void)
 			}
 			else
 			{
-				vspr_image(i + 8, 108 + (rand() & 3));
+				vspr_image(i + 8, SPIMAGE_EVDOOR + (rand() & 3));
 				vspr_move(i + 8, e->x - vscreenx, e->y + (rand() & 7));	
 			}
 			break;
@@ -581,7 +818,7 @@ void enemies_move(void)
 			}
 			else
 			{
-				vspr_image(i + 8, 116 + (rand() & 3));
+				vspr_image(i + 8, SPIMAGE_SPHERE + (rand() & 3));
 				vspr_move(i + 8, e->x - vscreenx, e->y);
 			}
 			break;
@@ -597,7 +834,7 @@ void enemies_move(void)
 			else
 			{
 				e->x += e->vx;
-				vspr_set(i + 8, e->x - vscreenx, e->y, 112 + (e->phase & 3), VCOL_ORANGE);
+				vspr_set(i + 8, e->x - vscreenx, e->y, SPIMAGE_PINGPONG + (e->phase & 3), VCOL_ORANGE);
 				if (e->vx > 0)
 				{
 					if (e->x >= e->p1)
@@ -614,12 +851,20 @@ void enemies_move(void)
 		case ET_EXPLOSION:
 			if (e->phase == 16)
 			{
-				e->type = ET_FREE;
-				vspr_hide(i + 8);
+				if (e->y < 160 && !(rand() & 7))
+				{
+					e->type = ET_COIN;
+				}
+				else
+				{
+					e->type = ET_FREE;
+					vspr_hide(i + 8);
+				}
 			}
 			else
 			{
-				vspr_image(i + 8, e->phase + 64 + 16);
+				vspr_color(i + 8, VCOL_YELLOW);
+				vspr_image(i + 8, e->phase + SPIMAGE_EXPLOSION);
 				e->phase++;
 			}
 			break;
@@ -653,7 +898,7 @@ void enemies_move(void)
 			if (e->y < 250)
 			{
 				vspr_move(i + 8, e->x - vscreenx, e->y);
-				vspr_image(i + 8, 124 + ((e->phase >> 2) & 7));
+				vspr_image(i + 8, SPIMAGE_POPCORN + ((e->phase >> 2) & 7));
 				e->phase++;
 			}
 			else
@@ -672,7 +917,7 @@ void enemies_move(void)
 			if (e->x < 512)
 			{
 				vspr_move(i + 8, e->x - vscreenx, e->y);
-				vspr_image(i + 8, 132 + ((e->phase >> 1) & 3));
+				vspr_image(i + 8, SPIMAGE_BOMBER_LEFT + ((e->phase >> 1) & 3));
 				e->phase++;
 				int dx = shipx - e->x;
 				if (dx >= -8 && dx <= 8)
@@ -694,7 +939,7 @@ void enemies_move(void)
 			if (e->x >= 0)
 			{
 				vspr_move(i + 8, e->x - vscreenx, e->y);
-				vspr_image(i + 8, 136 + ((e->phase >> 1) & 3));
+				vspr_image(i + 8, SPIMAGE_BOMBER_RIGHT + ((e->phase >> 1) & 3));
 				e->phase++;
 				int dx = shipx - e->x;
 				if (dx >= -8 && dx <= 8)
@@ -714,22 +959,32 @@ void enemies_move(void)
 				int y = 2 * e->cnt + (sintab[((e->phase + 31) << 1) & 0x7f] >> 3);
 				if (y < 250)
 				{
-					if (e->cnt == 50)
-					{
-						bullet_add(e->x + 8, e->y + 20, 0, 4);
-						bulld = 0;
-						bullet_add(e->x + 8, e->y + 20, -13, 3);
-						bulld = 0;
-						bullet_add(e->x + 8, e->y + 20, 13, 3);
-						bulld = 0;
-						bullet_add(e->x + 8, e->y + 20, -24, 2);
-						bulld = 0;
-						bullet_add(e->x + 8, e->y + 20, 24, 2);
-					}
 					if (e->cnt >= 50)
+					{
+						if (e->cnt == 50)
+						{
+							bullet_add(e->x + 8, e->y + 20, 0, 4);
+							bulld = 0;
+						}
+						else if (e->cnt == 51)
+						{
+							bullet_add(e->x + 8, e->y + 20, -13, 3);
+							bulld = 0;
+							bullet_add(e->x + 8, e->y + 20, 13, 3);
+							bulld = 0;
+						}
+						else if (e->cnt == 52)
+						{
+							bullet_add(e->x + 8, e->y + 20, -24, 2);
+							bulld = 0;
+							bullet_add(e->x + 8, e->y + 20, 24, 2);
+						}
+
 						e->x += 2 * (e->type - ET_SHIP_1) - 3;
+					}
 
 					e->y = y;
+					vspr_image(i + 8, SPIMAGE_SHIP_1 + 4 * (e->type - ET_SHIP_1) + ((e->phase >> 2) & 3));
 					vspr_move(i + 8, e->x - vscreenx, y);
 					e->phase++;
 					e->cnt++;
@@ -812,7 +1067,7 @@ void enemies_move(void)
 
 					vspr_color(i + 8, CorvetteColor[e->phase & 7]);
 					vspr_move(i + 8, e->x - vscreenx, e->y);
-					vspr_image(i + 8, 145 + ((e->phase >> 1) & 3));
+					vspr_image(i + 8, SPIMAGE_CORVETTE + ((e->phase >> 1) & 3));
 
 				}
 				else
@@ -822,13 +1077,186 @@ void enemies_move(void)
 				}
 			} break;
 
+		case ET_DESTROYER:
+			if (e->y < 250)
+			{
+				int y = 100 + (sintab[(e->phase + 32) & 0x7f] >> 1);					
+				int x = shipx;
+
+				switch ((e->cnt >> 3) & 3)
+				{
+				case 0:
+				case 2:
+					x = shipx - 12;
+					break;
+				case 1:
+					x = 128;
+					break;
+				case 3:
+					x = 384;
+					break;
+				}
+
+				if (e->x > x)
+				{
+					if (e->vx > -24)
+						e->vx--;
+				}
+				else if (e->x < x)
+				{
+					if (e->vx < 24)
+						e->vx++;
+				}
+
+				if (e->cnt > 128 || e->y < y)
+				{
+					if (e->vy < 24)
+						e->vy++;
+				}
+				else if (e->y > y)
+				{
+						if (e->vy > -16)
+						e->vy--;
+				}
+
+				e->x += e->vx >> 3;
+				e->y += e->vy >> 3;
+
+				e->phase++;
+
+				if (!(e->phase & 3))
+				{
+					e->cnt++;
+					switch (e->cnt & 31)
+					{
+					case 15:
+						enemies_add(e->x + 12, e->y + 10, ET_LASER, 0, 0);
+						break;
+					case 31:
+						bullet_add(e->x + 8, e->y + 20, -4, 3);
+						bulld = 0;
+						bullet_add(e->x + 32, e->y + 20, 4, 3);
+						bulld = 0;
+						break;
+					}
+				}
+
+				if (e->flash)
+				{
+					e->flash--;
+					vspr_color(i + 8, VCOL_WHITE);
+					vspr_color(e->ext + 8, VCOL_WHITE);
+				}
+				else
+				{
+					vspr_color(i + 8, DestroyerColor[e->phase & 7]);
+					vspr_color(e->ext + 8, DestroyerColor[e->phase & 7]);
+				}
+
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+				vspr_move(e->ext + 8, e->x - vscreenx + 24, e->y);
+
+			}
+			else
+			{
+				enemies[e->ext].type = ET_FREE;
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+				vspr_hide(e->ext + 8);
+			}
+			break;
+
+		case ET_FRIGATE:
+			if (e->y < 250)
+			{
+				int y = 80 + (sintab[e->phase >> 1] >> 2);					
+				int x = shipx;
+
+				switch ((e->cnt >> 3) & 3)
+				{
+				case 0:
+				case 2:
+					x = shipx - 12;
+					break;
+				case 1:
+					x = 128;
+					break;
+				case 3:
+					x = 384;
+					break;
+				}
+
+				if (e->x > x)
+				{
+					if (e->vx > -16)
+						e->vx--;
+				}
+				else if (e->x < x)
+				{
+					if (e->vx < 16)
+						e->vx++;
+				}
+
+				if (e->cnt > 128 || e->y < y)
+				{
+					if (e->vy < 16)
+						e->vy++;
+				}
+				else if (e->y > y)
+				{
+						if (e->vy > -12)
+						e->vy--;
+				}
+
+				e->x += e->vx >> 3;
+				e->y += e->vy >> 3;
+
+				e->phase++;
+
+				if (!(e->phase & 3))
+				{
+					e->cnt++;
+					switch (e->cnt & 31)
+					{
+					case 15:
+					case 31:
+						enemies_add(e->x + 12, e->y, ET_MISSILE, 0, 0);
+						break;
+					}
+				}
+
+				if (e->flash)
+				{
+					e->flash--;
+					vspr_color(i + 8, VCOL_WHITE);
+					vspr_color(e->ext + 8, VCOL_WHITE);
+				}
+				else
+				{
+					vspr_color(i + 8, FrigateColor[e->phase & 7]);
+					vspr_color(e->ext + 8, FrigateColor[e->phase & 7]);
+				}
+
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+				vspr_move(e->ext + 8, e->x - vscreenx + 24, e->y);
+
+			}
+			else
+			{
+				enemies[e->ext].type = ET_FREE;
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+				vspr_hide(e->ext + 8);
+			}
+			break;
+
 		case ET_STAR:
 			if (e->y < 250)
 			{
 				e->y++;
 				e->phase++;
 				vspr_move(i + 8, e->x - vscreenx, e->y);
-				vspr_image(i + 8, 96 + ((e->phase >> 2) & 3));
+				vspr_image(i + 8, SPIMAGE_STAR + ((e->phase >> 2) & 3));
 			}
 			else
 			{
@@ -837,6 +1265,292 @@ void enemies_move(void)
 			}
 
 			break;
+		case ET_COIN:
+			if (e->y < 250)
+			{
+				e->y += 2;
+				e->phase++;
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+				vspr_image(i + 8, SPIMAGE_COIN + ((e->phase >> 2) & 3));
+			}
+			else
+			{
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+			}
+
+			break;
+		case ET_LASER:
+			if (e->y < 246)
+			{
+				e->y += 8;
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+			}
+			else
+			{
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+			}
+
+			break;
+		case ET_MISSILE:
+			if (e->y < 246)
+			{
+				if (e->x < shipx)
+				{
+					if (e->vx < 16)
+						e->vx++;
+				}
+				else if (e->x > shipx)
+				{
+					if (e->vx > -16)
+						e->vx--;
+				}
+
+				if (e->vy < 32)
+					e->vy++;
+
+				e->y += e->vy >> 3;
+				e->x += e->vx >> 3;
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+			}
+			else
+			{
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+			}
+
+			break;
+
+		case ET_BOSS_MISSILE:
+			if (e->flash)
+			{
+				e->flash--;
+				vspr_color(i + 8, VCOL_WHITE);
+			}
+			else
+				vspr_color(i + 8, VCOL_RED);
+
+			if ((enemies[e->ext].phase & 7) == i && (enemies[e->ext].cnt & 31) == 15)
+				enemies_add(e->x, e->y, ET_MISSILE, 0, 0);
+			e->x = enemies[e->ext].x + e->vx;
+			e->y = enemies[e->ext].y + e->vy;
+			vspr_move(i + 8, e->x - vscreenx, e->y);
+			break;
+
+		case ET_BOSS_LASER:
+			if (!(enemies[e->ext].phase & 7) && (enemies[e->ext].cnt & 31) == 31)
+				enemies_add(e->x, e->y + 10, ET_LASER, 0, 0);
+			e->x = enemies[e->ext].x + e->vx;
+			e->y = enemies[e->ext].y + e->vy;
+			vspr_move(i + 8, e->x - vscreenx, e->y);
+			break;
+
+		case ET_BOSS_FRONT:
+			e->x = enemies[e->ext].x + e->vx;
+			e->y = enemies[e->ext].y + e->vy;
+			vspr_move(i + 8, e->x - vscreenx, e->y);
+			break;
+
+		case ET_BOSS_SUPPORT:
+			if (e->y < 250)
+			{
+				int y = 100 + (sintab[(e->phase + 32) & 0x7f] >> 1);					
+				int x = shipx;
+
+				switch ((e->cnt >> 3) & 3)
+				{
+				case 0:
+				case 2:
+					x = shipx - 12;
+					break;
+				case 1:
+					x = 128;
+					break;
+				case 3:
+					x = 384;
+					break;
+				}
+
+				if (e->x > x)
+				{
+					if (e->vx > -24)
+						e->vx--;
+				}
+				else if (e->x < x)
+				{
+					if (e->vx < 24)
+						e->vx++;
+				}
+
+				if (e->cnt > 128 || e->y < y)
+				{
+					if (e->vy < 24)
+						e->vy++;
+				}
+				else if (e->y > y)
+				{
+						if (e->vy > -16)
+						e->vy--;
+				}
+
+				e->x += e->vx >> 3;
+				e->y += e->vy >> 3;
+
+				e->phase++;
+
+				if (!(e->phase & 3))
+				{
+					e->cnt++;
+					if (!(e->cnt & 15))
+						enemies_add(e->x + 12, e->y + 10, ET_LASER, 0, 0);
+				}
+
+				if (e->flash)
+				{
+					e->flash--;
+					vspr_color(i + 8, VCOL_WHITE);
+				}
+				else
+					vspr_color(i + 8, DestroyerColor[e->phase & 7]);
+
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+			}
+			else
+			{
+				enemies[e->ext].type = ET_FREE;
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+			}
+			break;
+
+		case ET_BOSS:
+		case ET_BOSS_2:
+		case ET_BOSS_3:
+			if (e->y < 250)
+			{
+				int y = 80 + (sintab[e->cnt & 0x7f] >> 2);					
+				int x = shipx;
+
+				switch ((e->cnt >> 3) & 3)
+				{
+				case 0:
+				case 2:
+					x = shipx;
+					break;
+				case 1:
+					x = 128;
+					break;
+				case 3:
+					x = 384;
+					break;
+				}
+
+				if (e->x > x)
+				{
+					if (e->vx > -16)
+						e->vx--;
+				}
+				else if (e->x < x)
+				{
+					if (e->vx < 16)
+						e->vx++;
+				}
+
+				if (e->y < y)
+				{
+					if (e->vy < 16)
+						e->vy++;
+				}
+				else if (e->y > y)
+				{
+						if (e->vy > -12)
+						e->vy--;
+				}
+
+				e->x += e->vx >> 3;
+				e->y += e->vy >> 3;
+
+				e->phase++;
+
+				if (!(e->phase & 7))
+				{
+					e->cnt++;
+					switch (e->cnt & 31)
+					{
+					case 6:
+						bullet_add(e->x + 8, e->y + 40, -4, 3);
+						bulld = 0;
+						bullet_add(e->x + 8, e->y + 40, 4, 3);
+						bulld = 0;
+						break;
+					case 8:
+						bullet_add(e->x + 8, e->y + 40, -8, 2);
+						bulld = 0;
+						bullet_add(e->x + 8, e->y + 40, 8, 2);
+						bulld = 0;
+						break;
+					case 10:
+						bullet_add(e->x + 8, e->y + 40, -1, 4);
+						bulld = 0;
+						bullet_add(e->x + 8, e->y + 40, 1, 4);
+						bulld = 0;
+						break;
+
+					}
+				}
+
+				if (e->flash)
+				{
+					e->flash--;
+					vspr_color(i + 8, VCOL_WHITE);
+					vspr_color(e->ext + 8, VCOL_WHITE);
+				}
+				else
+				{
+					vspr_color(i + 8, FrigateColor[e->phase & 7]);
+					vspr_color(e->ext + 8, FrigateColor[e->phase & 7]);
+				}
+
+
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+
+			}
+			else
+			{
+				enemies[e->ext].type = ET_FREE;
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+				vspr_hide(e->ext + 8);
+			}
+			break;
+		case ET_LEVEL:
+			e->cnt++;
+
+			if (e->cnt < 64)
+			{
+				e->vx += 1;
+				e->x += e->vx;
+				vspr_move(i + 8, e->x >> 2, e->y);
+			}
+			else if (e->cnt < 140)
+			{
+				e->vx = 0;
+			}
+			else
+			{
+				e->vx -= 1;
+				e->x += e->vx;
+				if (e->x > 0)
+					vspr_move(i + 8, e->x >> 2, e->y);
+				else
+				{
+					e->type = ET_FREE;
+					vspr_hide(i + 8);				
+				}
+			}
+			break;
+
 		}		
 	}
 

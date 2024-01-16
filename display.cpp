@@ -39,6 +39,11 @@ char const SpriteImages[] = {
 	#embed spd_sprites lzo "sprites.spd"
 };
 
+// Background tiles
+const char BackgroundFont[] = {
+	#embed ctm_chars "background.ctm"
+};
+
 // Temporary buffer for expanded tiles
 char tile_buffer[32][64];
 #pragma align(tile_buffer, 256)
@@ -51,6 +56,7 @@ const char * level_seq;
 const char * level_wave;
 
 char tile_cache[8][16];
+#pragma align(tile_cache, 256)
 
 void copy_screen_rows3(char * sp, char sx, char sy)
 {
@@ -235,6 +241,36 @@ char LevelScrollFont[2][2][4 * 32];
 
 char phase;
 
+void background_init(char bg)
+{
+	// We have two sets of background 2x2 chars, one with and
+	// one without shadows
+	for(char k=0; k<2; k++)
+	{
+		// Two chars vertical is 16 lines
+		for(char j=0; j<16; j++)
+		{
+			char t = (j & 7) + ((j & 8) << 1) + k * 32 + 64 * bg;
+
+			// Get a 16 bit version of the two neighbouring chars
+			unsigned u = (BackgroundFont[t] << 8) | BackgroundFont[t + 8];
+
+			// Create four scrolled versions
+			for(char i=0; i<4; i++)
+			{
+				// Cache scrolled lines
+				LevelScrollFont[k][0][i * 32 + j     ] = u >> 8;
+				LevelScrollFont[k][0][i * 32 + j + 16] = u >> 8;
+				LevelScrollFont[k][1][i * 32 + j     ] = u & 0xff;
+				LevelScrollFont[k][1][i * 32 + j + 16] = u & 0xff;
+
+				// Rotate two bits to the left
+				u = (u << 2) | (u >> 14);
+			}
+		}
+	}
+}
+
 void display_init(void)
 {
 	cia_init();
@@ -251,8 +287,9 @@ void display_init(void)
 	// Expand charset
 	oscar_expand_lzo(Charset, LevelFont);
 
+	// White flash char, can't use 255 - would clobber up interrupt vector
 	for(char i=0; i<8; i++)
-		Charset[255 * 8 + i] = 0xff;
+		Charset[254 * 8 + i] = 0xff;
 
 	// Clear screen, prepare color area for multicolor
 	memset(Color, VCOL_WHITE + 8, 1000);
@@ -277,30 +314,7 @@ void display_init(void)
 
 	vspr_init(Screen0);
 
-	// We have two sets of background 2x2 chars, one with and
-	// one without shadows
-	for(char k=0; k<2; k++)
-	{
-		// Two chars vertical is 16 lines
-		for(char j=0; j<16; j++)
-		{
-			// Get a 16 bit version of the two neighbouring chars
-			unsigned u = (Charset[j + 32 * k] << 8) | Charset[j + 16 + 32 * k];
-
-			// Create four scrolled versions
-			for(char i=0; i<4; i++)
-			{
-				// Cache scrolled lines
-				LevelScrollFont[k][0][i * 32 + j     ] = u >> 8;
-				LevelScrollFont[k][0][i * 32 + j + 16] = u >> 8;
-				LevelScrollFont[k][1][i * 32 + j     ] = u & 0xff;
-				LevelScrollFont[k][1][i * 32 + j + 16] = u & 0xff;
-
-				// Rotate two bits to the left
-				u = (u << 2) | (u >> 14);
-			}
-		}
-	}
+	background_init(3);
 
 	memset(Charset + 64, 0x55, 128);
 
@@ -704,10 +718,10 @@ void tile_replace(char sx, char sy, char ti)
 				char ty = 0;
 				for(char i=0; i<n; i++)
 				{
-					sp[ty++] = 0xff;
-					sp[ty++] = 0xff;
-					sp[ty++] = 0xff;
-					sp[ty++] = 0xff;
+					sp[ty++] = 0xfe;
+					sp[ty++] = 0xfe;
+					sp[ty++] = 0xfe;
+					sp[ty++] = 0xfe;
 					ty += 36;
 				}
 			}
@@ -717,7 +731,7 @@ void tile_replace(char sx, char sy, char ti)
 
 void tile_collide(char x, char y)
 {
-	char sy = (y >> 2) + levely + 1, sx = x >> 2;
+	char sy = ((y + screeny) >> 2) + 1, sx = x >> 2;
 
 	char * lp  = tile_cache[sy & 7];
 

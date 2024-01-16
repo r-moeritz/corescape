@@ -15,4 +15,6 @@ void ships_inc(void);
 
 void ships_dec(void);
 
+void text_sprimage(char sp, char ch);
+
 #pragma compile("status.cpp")

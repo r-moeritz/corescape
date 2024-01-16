@@ -45,7 +45,7 @@ void player_move(void)
 	if (playerState == PLST_EXPLODING)
 	{
 		playerStateCount--;
-		vspr_image(0, 64 + 31 - (playerStateCount >> 2));
+		vspr_image(0, SPIMAGE_EXPLOSION + 15 - (playerStateCount >> 2));
 		if (playerStateCount == 0)
 		{
 			playerState = PLST_DESTROYED;
@@ -85,14 +85,22 @@ void player_move(void)
 			if (char_blocks_player(LevelAttr[scl0[scx0 + 1]]) || char_blocks_player(LevelAttr[scl0[scx1 + 1]]))
 			{
 				shipy = scy * 8 + (phase & 7) + 46;
-				scl0 = scl1;
-				scl1 = scl2;
 				if (shipy > 232)
 				{
 					playerState = PLST_EXPLODING;
 					playerStateCount = 64;
 					shipy = 228;
 				}
+				else if (shipy > 224)
+				{
+					if (!char_blocks_player(LevelAttr[scl0[scx0]]))
+						shipx -= 4;
+					else if (!char_blocks_player(LevelAttr[scl0[scx1 + 2]]))
+						shipx += 4;					
+				}
+
+				scl0 = scl1;
+				scl1 = scl2;
 			}
 			else if (shipy > 232)
 				shipy = 232;
@@ -117,7 +125,7 @@ void player_move(void)
 			shipy = 232;
 
 		vspr_move(0, shipx - vscreenx, shipy);	
-		vspr_image(0, 65 + joyx[0]);
+		vspr_image(0, (SPIMAGE_PLAYER + 1) + joyx[0]);
 
 		if (playerState == PLST_ENTERING)
 		{
@@ -152,16 +160,22 @@ void player_move(void)
 			char ei = enemies_collide(hx, shipy);
 			if (ei != 0xff)
 			{
-				if (enemies[ei].type == ET_STAR)
+				switch (enemies[ei].type)
 				{
+				case ET_STAR:
 					ships_inc();
 					enemies[ei].type = ET_FREE;
 					vspr_hide(ei + 8);
-				}
-				else
-				{
+					break;
+				case ET_COIN:
+					score_inc(200);
+					enemies[ei].type = ET_FREE;
+					vspr_hide(ei + 8);
+					break;
+				default:
 					playerState = PLST_EXPLODING;
 					playerStateCount = 64;
+					break;
 				}
 			}
 		}
@@ -217,7 +231,7 @@ void player_move(void)
 			shot[shots].x = shipx + 1;
 			shot[shots].dx = sdx;
 
-			vspr_set(shots + 1, shot[shots].x - vscreenx, shot[shots].y, 67, VCOL_YELLOW);
+			vspr_set(shots + 1, shot[shots].x - vscreenx, shot[shots].y, SPIMAGE_SHOT, VCOL_YELLOW);
 			shots = (shots + 1) & 3;
 			if (joyy[0] < 0)
 				shotd = 16;

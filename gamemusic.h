@@ -6,7 +6,10 @@ enum Tune
 	TUNE_MAIN_1,
 	TUNE_MAIN_2,
 	TUNE_MAIN_3,
-	TUNE_MAIN_4
+	TUNE_MAIN_4,
+
+	TUNE_HIGHSCORE,
+	TUNE_GAMEOVER,
 };
 
 
@@ -55,7 +58,24 @@ enum Tune
 //		2:53
 //		
 
-// 4 | 3:13
+// 4 | 4:05
+//		0:07
+//		0:22
+//		0:30
+//		0:38
+//		0:54
+//		1:10
+//		1:23
+//		1:40
+//		1:54
+//		2:10
+//		2:26
+//		2:40
+//		2:55
+//		3:12
+//		3:27
+//		3:42
+//		
 
 extern bool	music_off;
 

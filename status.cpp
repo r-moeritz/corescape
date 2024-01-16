@@ -9,7 +9,11 @@ const char ScoreFont[] = {
 	#embed ctm_chars "scorefont.ctm"
 };
 
-char * const ScoreSprite = (char *)0xf000;
+const char StatusFont[] = {
+	#embed ctm_chars "statusfont.ctm"
+};
+
+char * const ScoreSprite = (char *)(0xc000 + 64 * SPIMAGE_SCORE);
 
 char * const ScoreSpriteChars[] = {
 	ScoreSprite + 0,
@@ -68,8 +72,8 @@ void score_init(void)
 	ships_inc();
 	ships_inc();
 
-	vspr_set(6, 280, 220, 192, VCOL_YELLOW);
-	vspr_set(7, 304, 220, 193, VCOL_YELLOW);
+	vspr_set(6, 280, 220, SPIMAGE_SCORE + 0, VCOL_YELLOW);
+	vspr_set(7, 304, 220, SPIMAGE_SCORE + 1, VCOL_YELLOW);
 }
 
 void score_inc(unsigned amount)
@@ -152,5 +156,45 @@ void score_update(void)
 
 		if (digit < 2)
 			ships_inc();
+	}
+}
+
+static const char nibble[] = {
+	0x00, 0x03, 0x0c, 0x0f,
+	0x30, 0x33, 0x3c, 0x3f,
+	0xc0, 0xc3, 0xcc, 0xcf,
+	0xf0, 0xf3, 0xfc, 0xff
+};
+
+void text_sprimage(char sp, char ch)
+{
+	char 	* 	spr = (char *)(0xc000 + 64 * sp);
+	const char * cp = StatusFont + 8 * (ch & 0x3f);
+
+	char c0, c1, c2;
+	c0 = 0;
+	c1 = 0;
+
+	for(char i=0; i<10; i++)
+	{
+		c2 = i < 8 ? cp[i] : 0;
+
+		char cm = c0 | c1 | c2;
+
+		unsigned long xm = nibble[cm & 0x0f] | (nibble[cm >> 4] << 8);
+		xm |= xm << 2;
+		xm |= xm << 2;		
+		unsigned long xc = nibble[c1 & 0x0f] | (nibble[c1 >> 4] << 8);
+		xc <<= 2;
+
+		unsigned long m = (xm & 0x555555l) ^ xc;
+
+		spr[0] = (m >> 16) & 0xff;
+		spr[1] = (m >>  8) & 0xff;
+		spr[2] = (m      ) & 0xff;
+		spr += 3;
+
+		c0 = c1;
+		c1 = c2;
 	}
 }

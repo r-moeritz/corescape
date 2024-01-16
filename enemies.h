@@ -38,8 +38,25 @@ enum EnemyType
 
 	ET_RETRO,
 	ET_CORVETTE,
+	ET_DESTROYER,
+	ET_EXT,
+	ET_LASER,
+
+	ET_FRIGATE,
+	ET_MISSILE,
 
 	ET_STAR,
+	ET_COIN,
+
+	ET_BOSS,
+	ET_BOSS_2,
+	ET_BOSS_3,
+	ET_BOSS_MISSILE,
+	ET_BOSS_LASER,
+	ET_BOSS_SUPPORT,
+	ET_BOSS_FRONT,
+
+	ET_LEVEL,
 
 	NUM_ENEMY_TYPES
 };
@@ -91,6 +108,19 @@ enum EnemyWave
 	WAVE_STAR_6,
 	WAVE_STAR_7,
 	WAVE_STAR_8,
+
+	WAVE_DESTROYER_1,
+	WAVE_DESTROYER_2,
+	WAVE_DESTROYER_3,
+	WAVE_DESTROYER_4,
+
+	WAVE_FRIGATE_1,
+	WAVE_FRIGATE_2,
+	WAVE_FRIGATE_3,
+	WAVE_FRIGATE_4,
+
+	WAVE_BOSS,
+	WAVE_COINS,
 };
 
 extern __striped struct Enemy
@@ -99,7 +129,7 @@ extern __striped struct Enemy
 	int 		x, cx, p0, p1;
 	char		y, cy;
 	signed char	vx,vy;
-	char		phase, cnt;
+	char		phase, cnt, ext, hits, flash, link;
 }	enemies[8];
 
 void enemies_init(void);
@@ -110,7 +140,7 @@ void enemies_check(void);
 
 char enemies_collide(char hx, char y);
 
-void enemies_add(int x, int y, EnemyType type, int p0, int p1);
+char enemies_add(int x, int y, EnemyType type, int p0, int p1);
 
 void wave_start(EnemyWave wave);
 
