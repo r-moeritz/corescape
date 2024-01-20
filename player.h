@@ -27,6 +27,7 @@ void player_init(void);
 
 void player_move(void);
 
+void shots_move(void);
 
 #pragma compile("player.cpp")
 

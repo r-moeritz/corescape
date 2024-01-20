@@ -13,7 +13,7 @@ char bulls, bulle, bulld;
 char enemys, enemye;
 EnemyWave	ewave;
 char		ewave_cnt;
-
+bool 		hardcore, intermission;
 
 #pragma bss(xbss)
 __striped struct Bullet		bullet[8];
@@ -76,7 +76,7 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 	e->vx = 0;
 	e->p0 = p0;
 	e->p1 = p1;
-	e->hits = 1;
+	e->hits = hardcore ? 2 : 1;
 	e->ext = 0xff;
 	e->flash = 0;
 
@@ -94,7 +94,10 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 		break;
 	case ET_PINGPONG:
 		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_PINGPONG, VCOL_ORANGE);
-		e->vx = 5;
+		if (hardcore)
+			e->vx = 7;
+		else
+			e->vx = 5;
 		break;
 	case ET_LEFTGUARD:
 		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_LEFTGUARD, VCOL_YELLOW);
@@ -115,7 +118,7 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 		vspr_set(i + 8, x - vscreenx, 28, SPIMAGE_ALIEN + e->type - ET_ALIEN_1, VCOL_GREEN);
 		break;
 	case ET_POPCORN:
-		vspr_set(i + 8, x - vscreenx, 28, SPIMAGE_POPCORN, VCOL_ORANGE);
+		vspr_set(i + 8, x - vscreenx, 28, SPIMAGE_POPCORN, hardcore ? VCOL_BLUE : VCOL_ORANGE);
 		break;		
 	case ET_BOMBER_LEFT:
 		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_BOMBER_LEFT, VCOL_PURPLE);
@@ -131,7 +134,9 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 		break;
 	case ET_RETRO:
 		vspr_set(i + 8, x - vscreenx, y,  SPIMAGE_RETRO, VCOL_YELLOW);
-		e->cnt = 16 + (rand() & 15);
+		e->cnt = 8 + (rand() & 15);
+		if (!hardcore)
+			e->cnt += 12;
 		break;
 	case ET_CORVETTE:
 		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_CORVETTE, VCOL_YELLOW);
@@ -149,6 +154,15 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 		e->vy = - 8;
 		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_MISSILE, VCOL_YELLOW);		
 		break;		
+	case ET_PEACHES_1:
+	case ET_PEACHES_2:
+	case ET_PEACHES_3:
+	case ET_PEACHES_4:
+	case ET_PEACHES_5:
+		e->phase += 5 * i;
+		e->vx = 3;
+		vspr_set(i + 8, x - vscreenx, y, SPIMAGE_PEACHES, VCOL_PURPLE);		
+		break;		
 	case ET_DESTROYER:
 		{
 			char j = enemies_alloc();
@@ -162,7 +176,7 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 			vspr_set(j + 8, x - vscreenx + 24, y, SPIMAGE_DESTROYER + 1, VCOL_YELLOW);
 
 			e->phase += j;
-			e->hits = 8;
+			e->hits = hardcore ? 16 : 8;
 			e->ext = j;
 			enemies[j].type = ET_EXT;
 
@@ -181,12 +195,32 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 			vspr_set(j + 8, x - vscreenx + 24, y, SPIMAGE_FRIGATE + 1, VCOL_YELLOW);
 
 			e->phase += j;
-			e->hits = 8;
+			e->hits = hardcore ? 16 : 8;
 			e->ext = j;
 			enemies[j].type = ET_EXT;
 
 		}
 		break;
+
+	case ET_TRANSPORTER:
+		{
+			char j = enemies_alloc();
+			if (j == 0xff)
+			{
+				e->type = ET_FREE;
+				return 0xff;
+			}
+
+			vspr_set(i + 8, x - vscreenx     , y, SPIMAGE_TRANSPORTER + 0, VCOL_CYAN);
+			vspr_set(j + 8, x - vscreenx + 24, y, SPIMAGE_TRANSPORTER + 1, VCOL_CYAN);
+
+			e->phase += j;
+			e->hits = 16;
+			e->ext = j;
+			enemies[j].type = ET_EXT;
+		}
+		break;
+
 	case ET_BOSS:
 		{
 			char	bl[5];
@@ -203,7 +237,7 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 				b->y = y + b->vy;
 				b->cnt = 0;
 				b->ext = i;
-				b->hits = 8;
+				b->hits = hardcore ? 16 : 8;
 				vspr_set(t + 8, b->x - vscreenx, b->y, BossletI[j], BossletC[j]);
 			}
 
@@ -213,12 +247,12 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 			vspr_set(i + 8, x - vscreenx, y, SPIMAGE_BOSS + 2, VCOL_PURPLE);
 
 			e->ext = bl[2];
-			e->hits = 32;
+			e->hits = hardcore ? 64 : 32;
 			break;
 		}
 	case ET_LEVEL:
 		e->x <<= 2;
-		vspr_set(i + 8, x, y, SPIMAGE_TEXT_1 + p0, VCOL_YELLOW);
+		vspr_set(i + 8, x, y, SPIMAGE_TEXT_1 + p0, hardcore ? VCOL_CYAN : VCOL_YELLOW);
 		e->vx = -47;
 		break;
 	}
@@ -280,6 +314,11 @@ void wave_start(EnemyWave wave)
 	case WAVE_CORVETTE_2:
 	case WAVE_CORVETTE_3:
 	case WAVE_CORVETTE_4:
+	case WAVE_PEACHES_1:
+	case WAVE_PEACHES_2:
+	case WAVE_PEACHES_3:
+	case WAVE_PEACHES_4:
+	case WAVE_PEACHES_5:
 		ewave = wave;
 		ewave_cnt = 0;
 		break;
@@ -291,7 +330,7 @@ void wave_start(EnemyWave wave)
 	case WAVE_STAR_6:
 	case WAVE_STAR_7:
 	case WAVE_STAR_8:
-		enemies_add(StarPos[(wave - WAVE_STAR_1) & 3], 14 + 64 * (((wave - WAVE_STAR_1) >> 2) & 1) , ET_STAR, 0, 0);
+		enemies_add(StarPos[(wave - WAVE_STAR_1) & 3], 14 + 56 * (((wave - WAVE_STAR_1) >> 2) & 1) , ET_STAR, 0, 0);
 		break;
 	case WAVE_DESTROYER_1:
 		enemies_add(128, 30, ET_DESTROYER, 0, 0);
@@ -322,6 +361,10 @@ void wave_start(EnemyWave wave)
 		enemies_add(128,  30, ET_FRIGATE, 0, 0);
 		enemies_add(256, 30, ET_FRIGATE, 0, 0);
 		enemies_add(384, 30, ET_FRIGATE, 0, 0);
+		break;
+
+	case WAVE_TRANSPORTER:
+		enemies_add(0, 50, ET_TRANSPORTER, 0, 0);
 		break;
 
 	case WAVE_BOSS:
@@ -410,6 +453,46 @@ void wave_loop(void)
 		if (ewave_cnt == (8 * (ewave - WAVE_CORVETTE_1) + 1))
 			ewave = WAVE_NONE;
 		break;
+
+	case WAVE_PEACHES_1:
+		if (!(ewave_cnt & 1))
+			enemies_add(128 + (rand() & 7), 20, ET_PEACHES_1, 0, 0);
+		ewave_cnt++;
+		if (ewave_cnt == 13)
+			ewave = WAVE_NONE;
+		break;
+
+	case WAVE_PEACHES_2:
+		if (!(ewave_cnt & 1))
+			enemies_add(384 + (rand() & 7), 20, ET_PEACHES_2, 0, 0);
+		ewave_cnt++;
+		if (ewave_cnt == 13)
+			ewave = WAVE_NONE;
+		break;
+
+	case WAVE_PEACHES_3:
+		if (!(ewave_cnt & 1))
+			enemies_add(64, 20, ET_PEACHES_3, 0, 0);
+		ewave_cnt++;
+		if (ewave_cnt == 13)
+			ewave = WAVE_NONE;
+		break;
+
+	case WAVE_PEACHES_4:
+		if (!(ewave_cnt & 1))
+			enemies_add(0, 220, ET_PEACHES_4, 0, 0);
+		ewave_cnt++;
+		if (ewave_cnt == 13)
+			ewave = WAVE_NONE;
+		break;
+
+	case WAVE_PEACHES_5:
+		if (!(ewave_cnt & 1))
+			enemies_add(64 + 32 * ewave_cnt, 30, ET_PEACHES_5, 0, 0);
+		ewave_cnt++;
+		if (ewave_cnt == 13)
+			ewave = WAVE_NONE;
+		break;
 	}
 }
 
@@ -439,6 +522,10 @@ char enemies_collide(char hx, char y)
 			if ((char)((e->x >> 1) + 8 - hx) < 16 && (char)(e->y + 14 - y) < 28)
 				return i;
 			break;
+		case ET_UFO:
+			if (hardcore && (char)((e->x >> 1) + 8 - hx) < 16 && (char)(e->y + 14 - y) < 28)
+				return i;
+			break;			
 		case ET_ALIEN_1:
 		case ET_ALIEN_2:
 		case ET_ALIEN_3:
@@ -458,11 +545,17 @@ char enemies_collide(char hx, char y)
 		case ET_BOSS_MISSILE:
 		case ET_BOSS_LASER:
 		case ET_BOSS_SUPPORT:
+		case ET_PEACHES_1:
+		case ET_PEACHES_2:
+		case ET_PEACHES_3:
+		case ET_PEACHES_4:
+		case ET_PEACHES_5:
 			if ((char)((e->x >> 1) + 8 - hx) < 16 && (char)(e->y + 14 - y) < 28)
 				return i;
 			break;
 		case ET_DESTROYER:
 		case ET_FRIGATE:
+		case ET_TRANSPORTER:
 			if ((char)((e->x >> 1) + 8 - hx) < 28 && (char)(e->y + 14 - y) < 28)
 				return i;
 			break;
@@ -501,6 +594,13 @@ static const char EnemyFlags[NUM_ENEMY_TYPES] =
 
 	[ET_DESTROYER] = ETF_SHOT,
 	[ET_FRIGATE] = ETF_SHOT,
+	[ET_TRANSPORTER] = ETF_SHOT,
+
+	[ET_PEACHES_1] = ETF_SHOT,
+	[ET_PEACHES_2] = ETF_SHOT,
+	[ET_PEACHES_3] = ETF_SHOT,
+	[ET_PEACHES_4] = ETF_SHOT,
+	[ET_PEACHES_5] = ETF_SHOT,
 
 	[ET_BOSS_MISSILE] = ETF_SHOT,
 	[ET_BOSS_SUPPORT] = ETF_SHOT,
@@ -529,11 +629,18 @@ static const char EnemyWidth[NUM_ENEMY_TYPES] =
 	[ET_SHIP_3] = 20,
 	[ET_SHIP_4] = 20,
 
+	[ET_PEACHES_1] = 20,
+	[ET_PEACHES_2] = 20,
+	[ET_PEACHES_3] = 20,
+	[ET_PEACHES_4] = 20,
+	[ET_PEACHES_5] = 20,
+
 	[ET_RETRO] = 20,
 	[ET_CORVETTE] = 20,
 
 	[ET_DESTROYER] = 44,
 	[ET_FRIGATE] = 44,
+	[ET_TRANSPORTER] = 44,
 
 	[ET_BOSS] = 20,
 	[ET_BOSS_2] = 20,
@@ -566,10 +673,17 @@ static const unsigned EnemyScore[NUM_ENEMY_TYPES] =
 	[ET_SHIP_3] = 200,
 	[ET_SHIP_4] = 300,
 
+	[ET_PEACHES_1] = 500,
+	[ET_PEACHES_2] = 500,
+	[ET_PEACHES_3] = 500,
+	[ET_PEACHES_4] = 500,
+	[ET_PEACHES_5] = 500,
+
 	[ET_RETRO] = 250,
 	[ET_CORVETTE] = 500,
 	[ET_DESTROYER] = 1000,
 	[ET_FRIGATE] = 1500,
+	[ET_TRANSPORTER] = 2500,
 
 	[ET_BOSS_3] = 20000,
 	[ET_BOSS_MISSILE] = 1000,
@@ -617,6 +731,10 @@ void enemies_check(void)
 								}
 								e->type = ET_EXPLOSION;
 								e->phase = 0;
+							}
+							else if (e->type == ET_TRANSPORTER)
+							{
+								enemies_add(e->x + 12, e->y + 12, ET_COIN, 0, 0);
 							}
 							break;
 						}
@@ -894,12 +1012,158 @@ void enemies_move(void)
 				}
 			}
 			break;
+
+		case ET_PEACHES_1:
+			{
+				switch (e->cnt)
+				{
+				case 0:
+				case 2:
+					e->y += 2;
+					if (e->y >= 220)
+						e->cnt++;
+					break;
+				case 1:
+					e->y -= 2;
+					e->x += 3;
+					if (e->y < 50)
+						e->cnt++;
+					break;
+				case 3:
+					e->y += 2;
+					break;
+				}
+
+				if (e->y < 250)
+				{
+					vspr_move(i + 8, e->x - vscreenx, e->y);
+					vspr_image(i + 8, SPIMAGE_PEACHES + ((e->phase >> 1) & 7));
+					e->phase++;
+				}
+				else
+				{
+					e->type = ET_FREE;
+					vspr_hide(i + 8);
+				}
+			}	break;
+		case ET_PEACHES_2:
+			{
+				switch (e->cnt)
+				{
+				case 0:
+				case 2:
+					e->y += 2;
+					if (e->y >= 220)
+						e->cnt++;
+					break;
+				case 1:
+					e->y -= 2;
+					e->x -= 3;
+					if (e->y < 50)
+						e->cnt++;
+					break;
+				case 3:
+					e->y += 2;
+					break;
+				}
+
+				if (e->y < 250)
+				{
+					vspr_move(i + 8, e->x - vscreenx, e->y);
+					vspr_image(i + 8, SPIMAGE_PEACHES + ((e->phase >> 1) & 7));
+					e->phase++;
+				}
+				else
+				{
+					e->type = ET_FREE;
+					vspr_hide(i + 8);
+				}
+			}	break;
+
+		case ET_PEACHES_3:
+			e->x += e->vx;
+			if (!(e->phase & 1))
+				e->y += 1;
+
+			if (e->x > 448 || e->x < 64)
+				e->vx = -e->vx;
+
+			if (e->y < 250)
+			{
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+				vspr_image(i + 8, SPIMAGE_PEACHES + ((e->phase >> 1) & 7));
+				e->phase++;
+			}
+			else
+			{
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+			}
+			break;
+		case ET_PEACHES_4:
+			{
+				switch (e->cnt)
+				{
+				case 0:
+					e->y -= 1;
+					e->x += 3;
+					if (e->y < 50)
+						e->cnt++;
+					break;
+				case 1:
+					e->x -= 2;
+					if (e->x < 64)
+						e->cnt++;
+					break;
+				case 2:
+					e->y += 1;
+					e->x += 4;
+					if (e->x >= 384)
+						e->cnt++;
+					break;
+				case 3:
+					e->y += 1;
+					e->x -= 2;
+					break;
+				}
+
+				if (e->y < 250)
+				{
+					vspr_move(i + 8, e->x - vscreenx, e->y);
+					vspr_image(i + 8, SPIMAGE_PEACHES + ((e->phase >> 1) & 7));
+					e->phase++;
+				}
+				else
+				{
+					e->type = ET_FREE;
+					vspr_hide(i + 8);
+				}
+			}	break;
+
+		case ET_PEACHES_5:
+			e->y += 2;
+
+			if (e->y < 250)
+			{
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+				vspr_image(i + 8, SPIMAGE_PEACHES + ((e->phase >> 1) & 7));
+				e->phase++;
+			}
+			else
+			{
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+			}
+			break;
+
 		case ET_POPCORN:
 			e->y += 2;
 			if (e->y < 250)
 			{
 				vspr_move(i + 8, e->x - vscreenx, e->y);
 				vspr_image(i + 8, SPIMAGE_POPCORN + ((e->phase >> 2) & 7));
+				if (hardcore && !(rand() & 255))
+					bullet_add(e->x + 8, e->y + 20, 4 * ((rand() & 1) * 2 - 1), 3);
 				e->phase++;
 			}
 			else
@@ -922,7 +1186,11 @@ void enemies_move(void)
 				e->phase++;
 				int dx = shipx - e->x;
 				if (dx >= -8 && dx <= 8)
+				{
 					bullet_add(e->x + 8, e->y + 20, 4 * ((rand() & 1) * 2 - 1), 2);
+					if (hardcore)
+						bulld = 1;
+				}
 			}
 			else
 			{
@@ -944,7 +1212,11 @@ void enemies_move(void)
 				e->phase++;
 				int dx = shipx - e->x;
 				if (dx >= -8 && dx <= 8)
+				{
 					bullet_add(e->x + 8, e->y + 20, 4 * ((rand() & 1) * 2 - 1), 2);
+					if (hardcore)
+						bulld = 1;
+				}
 			}
 			else
 			{
@@ -1236,6 +1508,39 @@ void enemies_move(void)
 				{
 					vspr_color(i + 8, FrigateColor[e->phase & 7]);
 					vspr_color(e->ext + 8, FrigateColor[e->phase & 7]);
+				}
+
+				vspr_move(i + 8, e->x - vscreenx, e->y);
+				vspr_move(e->ext + 8, e->x - vscreenx + 24, e->y);
+
+			}
+			else
+			{
+				enemies[e->ext].type = ET_FREE;
+				e->type = ET_FREE;
+				vspr_hide(i + 8);
+				vspr_hide(e->ext + 8);
+			}
+			break;
+
+		case ET_TRANSPORTER:
+			if (e->x < 512)
+			{
+				e->x += 2;
+				if (!(e->phase & 3))
+					e->y ++;
+				e->phase++;
+
+				if (e->flash)
+				{
+					e->flash--;
+					vspr_color(i + 8, VCOL_WHITE);
+					vspr_color(e->ext + 8, VCOL_WHITE);
+				}
+				else
+				{
+					vspr_color(i + 8, VCOL_CYAN);
+					vspr_color(e->ext + 8, VCOL_CYAN);
 				}
 
 				vspr_move(i + 8, e->x - vscreenx, e->y);

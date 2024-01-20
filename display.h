@@ -61,9 +61,11 @@ extern int vscreenx;
 #define SPIMAGE_LASER			0x9a
 #define SPIMAGE_FRIGATE			0x9b
 #define SPIMAGE_MISSILE			0x9d
+#define SPIMAGE_TRANSPORTER		0x9e
 #define SPIMAGE_BOSS			0xa0
 
 #define SPIMAGE_SCORE			0xa6
+#define SPIMAGE_PEACHES			0xa8
 
 #define SPIMAGE_TEXT_1			0xb0
 #define SPIMAGE_TEXT_2			0xb8

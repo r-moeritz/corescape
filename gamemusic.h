@@ -10,6 +10,8 @@ enum Tune
 
 	TUNE_HIGHSCORE,
 	TUNE_GAMEOVER,
+
+	TUNE_INTERLUDE,
 };
 
 

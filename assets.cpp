@@ -29,7 +29,7 @@ char const SpriteImages[] = {
 };
 
 __export const char AssetMusic[] = {
-	#embed 0x3000 0x88 lzo "AcidShmupVA.sid" 
+	#embed 0x3000 0x88 lzo "AcidShmupVB.sid" 
 };
 
 #pragma data(data)

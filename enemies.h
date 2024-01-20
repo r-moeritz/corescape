@@ -3,6 +3,7 @@
 #define TIME_DEBUG	0
 
 extern char bulls, bulle, bulld;
+extern bool hardcore, intermission;
 
 extern __striped struct Bullet
 {
@@ -44,6 +45,13 @@ enum EnemyType
 
 	ET_FRIGATE,
 	ET_MISSILE,
+	ET_TRANSPORTER,
+
+	ET_PEACHES_1,
+	ET_PEACHES_2,
+	ET_PEACHES_3,
+	ET_PEACHES_4,
+	ET_PEACHES_5,
 
 	ET_STAR,
 	ET_COIN,
@@ -54,7 +62,7 @@ enum EnemyType
 	ET_BOSS_MISSILE,
 	ET_BOSS_LASER,
 	ET_BOSS_SUPPORT,
-	ET_BOSS_FRONT,
+	ET_BOSS_FRONT,	
 
 	ET_LEVEL,
 
@@ -121,6 +129,13 @@ enum EnemyWave
 
 	WAVE_BOSS,
 	WAVE_COINS,
+	WAVE_TRANSPORTER,
+
+	WAVE_PEACHES_1,
+	WAVE_PEACHES_2,
+	WAVE_PEACHES_3,
+	WAVE_PEACHES_4,
+	WAVE_PEACHES_5,
 };
 
 extern const signed char sintab[];

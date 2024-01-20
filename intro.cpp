@@ -216,7 +216,14 @@ void intro_scroll_1(void)
 }
 
 static const char IntroText[] = S"CORESCAPE BY CRISPS AND DR.MORTAL WOMBAT   ";
-static const char ScrollText[] = S"CORESCAPE --- MUSIC BY CRISPS --- CODING AND GRAPHICS BY DR.MORTAL WOMBAT   ";
+static const char ScrollText[] = 
+	S"*** CORESCAPE ***   "
+	S"--- MUSIC BY CRISPS "
+	S"--- CODING AND GRAPHICS BY DR.MORTAL WOMBAT "
+	S"--- PUSH BUTTON TO START "
+	S"--- SPACE TO PAUSE "
+	S"--- CHEATS: (S) SKIP, (T) TRAINER, (L) LIVE, (R) RETRY "
+	S"--- NO HIGHSCORE WHEN CHEATING :) ---       ";
 
 void intro_col_back(char cb)
 {
@@ -482,6 +489,8 @@ void intro_play(void)
 			break;
 	}
 
+	music_volume(8);	
+
 	rirq_clear(17);
 	rirq_clear(18);
 	rirq_clear(19);
@@ -495,5 +504,9 @@ void intro_play(void)
 	memset(Screen0, 254, 1000);
 	memset(Color, VCOL_WHITE + 8, 1000);
 
+	music_volume(4);	
+
 	display_fade_out();
+
+	music_volume(0);	
 }

@@ -248,7 +248,7 @@ void background_init(char bg)
 		// Two chars vertical is 16 lines
 		for(char j=0; j<16; j++)
 		{
-			char t = (j & 7) + ((j & 8) << 1) + k * 32 + 64 * bg;
+			int t = (j & 7) + ((j & 8) << 1) + k * 32 + 64 * bg;
 
 			// Get a 16 bit version of the two neighbouring chars
 			unsigned u = (BackgroundFont[t] << 8) | BackgroundFont[t + 8];
@@ -282,31 +282,81 @@ void background_init(char bg)
 	}			
 }
 
+void display_colors_full(void)
+{
+	if (hardcore)
+	{
+		vic.color_border = VCOL_RED;
+		vic.color_back = VCOL_ORANGE;
+		vic.color_back1 = VCOL_BLACK;
+		vic.color_back2 = VCOL_MED_GREY;
+	}
+	else if (intermission)
+	{
+		vic.color_border = VCOL_DARK_GREY;
+		vic.color_back = VCOL_MED_GREY;
+		vic.color_back1 = VCOL_BLACK;
+		vic.color_back2 = VCOL_YELLOW;
+	}
+	else
+	{
+		vic.color_border = VCOL_BLUE;
+		vic.color_back = VCOL_LT_BLUE;
+		vic.color_back1 = VCOL_BLACK;
+		vic.color_back2 = VCOL_LT_GREY;
+	}
+}
+
+void display_colors_mid(void)
+{
+	if (hardcore)
+	{
+		vic.color_border = VCOL_LT_RED;
+		vic.color_back = VCOL_YELLOW;
+		vic.color_back1 = VCOL_MED_GREY;
+		vic.color_back2 = VCOL_LT_GREY;		
+	}
+	else if (intermission)
+	{
+		vic.color_border = VCOL_MED_GREY;
+		vic.color_back = VCOL_LT_GREY;
+		vic.color_back1 = VCOL_MED_GREY;
+		vic.color_back2 = VCOL_WHITE;
+	}
+	else
+	{
+		vic.color_border = VCOL_LT_BLUE;
+		vic.color_back = VCOL_WHITE;
+		vic.color_back1 = VCOL_MED_GREY;
+		vic.color_back2 = VCOL_WHITE;
+	}
+}
+
+void display_colors_white(void)
+{
+	vic.color_border = VCOL_WHITE;
+	vic.color_back = VCOL_WHITE;
+	vic.color_back1 = VCOL_WHITE;
+	vic.color_back2 = VCOL_WHITE;
+}
+
 void display_fade_out(void)
 {
 	vic_waitBottom();
 	vic_waitTop();
-	vic.color_border = VCOL_BLUE;
-	vic.color_back = VCOL_LT_BLUE;
-	vic.color_back1 = VCOL_BLACK;
-	vic.color_back2 = VCOL_LT_GREY;
+
+	display_colors_full();
 
 	vic_waitFrames(2);
 	vic_waitTop();
 
 	vic.spr_enable = 0x00;
-	vic.color_border = VCOL_LT_BLUE;
-	vic.color_back = VCOL_WHITE;
-	vic.color_back1 = VCOL_MED_GREY;
-	vic.color_back2 = VCOL_WHITE;
+	display_colors_mid();
 
 	vic_waitFrames(2);
 	vic_waitTop();
 
-	vic.color_border = VCOL_WHITE;
-	vic.color_back = VCOL_WHITE;
-	vic.color_back1 = VCOL_WHITE;
-	vic.color_back2 = VCOL_WHITE;
+	display_colors_white();
 
 	vic_waitBottom();
 }
@@ -315,27 +365,18 @@ void display_fade_in(void)
 {
 	vic_waitBottom();
 	vic_waitTop();
-	vic.color_border = VCOL_WHITE;
-	vic.color_back = VCOL_WHITE;
-	vic.color_back1 = VCOL_WHITE;
-	vic.color_back2 = VCOL_WHITE;
+	display_colors_white();
 
 	vic_waitFrames(2);
 	vic_waitTop();
 
-	vic.color_border = VCOL_LT_BLUE;
-	vic.color_back = VCOL_WHITE;
-	vic.color_back1 = VCOL_MED_GREY;
-	vic.color_back2 = VCOL_WHITE;
+	display_colors_mid();
 
 	vic_waitFrames(2);
 	vic_waitTop();
 
 	vic.spr_enable = 0xff;
-	vic.color_border = VCOL_BLUE;
-	vic.color_back = VCOL_LT_BLUE;
-	vic.color_back1 = VCOL_BLACK;
-	vic.color_back2 = VCOL_LT_GREY;
+	display_colors_full();
 
 	vic_waitBottom();
 }
@@ -688,6 +729,7 @@ void tile_redraw(char sy, const char * tis)
 		char * scl = tilerows[(y1 + scy) & 31] + screenx;
 		for(char i=0; i<n; i++)
 		{
+			#pragma unroll(4)
 			for(signed char x=39; x>=0; x--)
 				sp[x] = scl[x];
 			sp += 40;
@@ -708,6 +750,7 @@ void tile_redraw(char sy, const char * tis)
 
 			for(char i=0; i<n; i++)
 			{
+				#pragma unroll(4)
 				for(signed char x=39; x>=0; x--)
 					sp[x] = scl[x];
 				sp += 40;

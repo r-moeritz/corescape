@@ -6,7 +6,7 @@
 #pragma region( xbss, 0x9000, 0xa000, , , { xbss } )
 
 #pragma section( assets, 0)
-#pragma region( assets, 0x9d00, 0xd000, , , {assets} )
+#pragma region( assets, 0x9a00, 0xd000, , , {assets} )
 
 
 void assets_init(void);

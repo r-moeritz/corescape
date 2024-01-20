@@ -24,12 +24,35 @@ void player_init(void)
 		vspr_hide(i + 1);
 	}
 
-	vspr_set(0, shipx, shipy, 65, VCOL_ORANGE);
+	vspr_set(0, shipx, shipy, 65, hardcore ? VCOL_LT_BLUE : VCOL_ORANGE);
 }
 
 static inline bool char_blocks_player(char c)
 {
 	return c >= 0x90 && c < 0xc0;
+}
+
+void shots_move(void)
+{
+	for(char i=0; i<4; i++)
+	{
+		char shy = shot[i].y;
+		if (shy != 0)
+		{
+			shy -= 4;
+
+			if (shy < 40)
+			{
+				shy = 0;
+				vspr_hide(i + 1);
+			}
+			else
+				vspr_move(i + 1, shot[i].x - vscreenx, shot[i].y);
+
+			shot[i].y = shy;
+			shot[i].x += shot[i].dx;
+		}
+	}
 }
 
 void player_move(void)
