@@ -215,14 +215,15 @@ void intro_scroll_1(void)
 	}
 }
 
-static const char IntroText[] = S"CORESCAPE BY CRISPS AND DR.MORTAL WOMBAT   ";
+static const char IntroText[] = S"\y80CORESCAPE BY CRISPS AND DR.MORTAL WOMBAT   ";
 static const char ScrollText[] = 
-	S"*** CORESCAPE ***   "
-	S"--- MUSIC BY CRISPS "
-	S"--- CODING AND GRAPHICS BY DR.MORTAL WOMBAT "
-	S"--- PUSH BUTTON TO START "
+	S"\y81*** CORESCAPE ***\y80   "
+	S"--- MUSIC BY \y83CRISPS\y80 "
+	S"--- CODING AND GRAPHICS BY \y83DR.MORTAL WOMBAT\y80 "
+	S"--- JOYSTICK IN PORT \y812\y80 "
+	S"--- BUTTON TO START "
 	S"--- SPACE TO PAUSE "
-	S"--- CHEATS: (S) SKIP, (T) TRAINER, (L) LIVE, (R) RETRY "
+	S"--- CHEATS: \y81S\y82KIP, \y81T\y82RAINER, \y81L\y82IVE, \y81R\y82ETRY, \y81H\y82ALFSPEED \y80"
 	S"--- NO HIGHSCORE WHEN CHEATING :) ---       ";
 
 void intro_col_back(char cb)
@@ -427,6 +428,8 @@ void intro_play(void)
 				{
 					Screen0[7 * 40 + i] = Screen0[7 * 40 + i + 1];
 					Screen0[8 * 40 + i] = Screen0[8 * 40 + i + 1];
+					Color[7 * 40 + i] = Color[7 * 40 + i + 1];
+					Color[8 * 40 + i] = Color[8 * 40 + i + 1];
 				}
 				sj++;
 				if (!ScrollText[sj])
@@ -451,6 +454,31 @@ void intro_play(void)
 				break;
 			}
 			intro_col_back(cb);
+
+			if (ScrollText[sj] & 0x80)
+			{
+				switch (ScrollText[sj])
+				{
+				case 0x80:
+					Color[7 * 40 + 39] = VCOL_YELLOW;
+					Color[8 * 40 + 39] = VCOL_ORANGE;
+					break;
+				case 0x81:
+					Color[7 * 40 + 39] = VCOL_WHITE;
+					Color[8 * 40 + 39] = VCOL_LT_GREY;
+					break;
+				case 0x82:
+					Color[7 * 40 + 39] = VCOL_LT_BLUE;
+					Color[8 * 40 + 39] = VCOL_BLUE;
+					break;
+				case 0x83:
+					Color[7 * 40 + 39] = VCOL_LT_GREEN;
+					Color[8 * 40 + 39] = VCOL_GREEN;
+					break;
+				}
+				sj++;
+			}
+
 			Screen0[7 * 40 + 39] = ScrollText[sj] | 0x80;
 			Screen0[8 * 40 + 39] = ScrollText[sj] | 0xc0;
 

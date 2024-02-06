@@ -138,6 +138,10 @@ void game_keyboard(void)
 			trainer_mode = true;
 			game_cheat();
 			break;
+		case KSCAN_H:
+			halfspeed = !halfspeed;
+			game_cheat();
+			break;
 		case KSCAN_L:
 			ships_inc();
 			break;
@@ -160,6 +164,7 @@ void game_play(void)
 	hardcore = false;
 	intermission = false;
 	restart = false;
+	halfspeed = false;
 
 	score_init();
 
@@ -222,6 +227,8 @@ void game_play(void)
 				break;
 			}
 		}
+
+		halfspeed = false;
 
 		if (restart) return;
 

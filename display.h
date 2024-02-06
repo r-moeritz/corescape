@@ -26,6 +26,7 @@ extern char screenx, screeny;
 extern char screeni;
 extern char phase;
 extern int vscreenx;
+extern bool halfspeed;
 
 #define NUM_TILES	64
 

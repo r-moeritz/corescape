@@ -427,9 +427,10 @@ void display_init(void)
 
 int vscreenx;
 char px = 4;
-signed char ndx = 0;
+signed char ndx;
 char	starp[4];
-signed char dx = 0;
+signed char dx;
+bool	halfspeed;
 
 void level_init(const char * seq, const char * wave, char lsize)
 {
@@ -453,6 +454,7 @@ void level_init(const char * seq, const char * wave, char lsize)
 	ndx = 0;
 	vscreenx = 96;
 	pscreenx = screenx = 12;
+	halfspeed = false;
 
 	for(char i=0; i<8; i++)
 		rebuild_screen(i);
@@ -552,7 +554,9 @@ void display_loop(void)
 	vic.color_border = VCOL_RED;
 #endif
 
-	music_play();
+	if (!halfspeed)
+		music_play();
+
 #if TIME_DEBUG
 	vic.color_border = VCOL_LT_BLUE;
 #endif
@@ -650,6 +654,13 @@ void display_loop(void)
 
 
 	music_play();
+
+	if (halfspeed)
+	{
+		rirq_wait();
+		vspr_update();
+		music_play();
+	}
 
 #if TIME_DEBUG
 	vic.color_border = VCOL_WHITE;

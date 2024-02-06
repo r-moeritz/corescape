@@ -79,6 +79,11 @@ enum Tune
 //		3:42
 //		
 
+
+// I | 0:30
+//		0:14
+//		
+
 extern bool	music_off;
 
 void music_init(Tune tune);
