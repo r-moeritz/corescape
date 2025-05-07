@@ -30,6 +30,7 @@ void enemies_init(void)
 		vspr_hide(i + 8);
 }
 
+// Allocate a new enemy from the free list
 char enemies_alloc(void)
 {
 	char i;
@@ -58,11 +59,12 @@ static const EnemyType BossletT[] = {ET_BOSS_LASER, ET_BOSS_MISSILE, ET_BOSS_FRO
 
 char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 {
-
+	// Allocate an empty enemy slot
 	char i = enemies_alloc();
 	if (i == 0xff)
 		return 0xff;
 
+	// Init common enemy fields
 	auto	e = enemies + i;
 
 	e->type = type;
@@ -80,6 +82,7 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 	e->ext = 0xff;
 	e->flash = 0;
 
+	// Init type specific enemy fields
 	switch (e->type)
 	{
 	case ET_UFO:
@@ -165,6 +168,7 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 		break;		
 	case ET_DESTROYER:
 		{
+			// Two sprite enemies needs a second slot
 			char j = enemies_alloc();
 			if (j == 0xff)
 			{
@@ -184,6 +188,7 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 		break;
 	case ET_FRIGATE:
 		{
+			// Two sprite enemies needs a second slot
 			char j = enemies_alloc();
 			if (j == 0xff)
 			{
@@ -204,6 +209,7 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 
 	case ET_TRANSPORTER:
 		{
+			// Two sprite enemies needs a second slot
 			char j = enemies_alloc();
 			if (j == 0xff)
 			{
@@ -225,6 +231,7 @@ char enemies_add(int x, int y, EnemyType type, int p0, int p1)
 		{
 			char	bl[5];
 
+			// Six sprite enemies needs a full six slots
 			for(char j=0; j<5; j++)
 			{
 				char t = enemies_alloc();
@@ -269,6 +276,8 @@ const int StarPos[] = {
 
 void wave_start(EnemyWave wave)
 {
+	// Add enemies on wave start
+
 	switch(wave)
 	{
 	case WAVE_UFO_4:
@@ -383,6 +392,8 @@ void wave_start(EnemyWave wave)
 
 void wave_loop(void)
 {
+	// Add enemies while wave is active
+
 	switch (ewave)
 	{
 	case WAVE_POPCORN_1:
@@ -496,6 +507,7 @@ void wave_loop(void)
 	}
 }
 
+// Find enemy that collides with player
 char enemies_collide(char hx, char y)
 {
 	for(char ei=enemys; ei!=enemye; ei++)
@@ -607,6 +619,7 @@ static const char EnemyFlags[NUM_ENEMY_TYPES] =
 	[ET_BOSS_3] = ETF_SHOT,
 };
 
+// Table of enemy width used for collision checking
 static const char EnemyWidth[NUM_ENEMY_TYPES] = 
 {
 	[ET_UFO] = 20,
@@ -651,6 +664,7 @@ static const char EnemyWidth[NUM_ENEMY_TYPES] =
 	[ET_BOSS_SUPPORT] = 20,
 };
 
+// Table of base score for enemy types
 static const unsigned EnemyScore[NUM_ENEMY_TYPES] =
 {
 	[ET_UFO] = 100,
@@ -692,30 +706,41 @@ static const unsigned EnemyScore[NUM_ENEMY_TYPES] =
 
 void enemies_check(void)
 {
+	// Loop over list of enemies
 	for(char ei=enemys; ei!=enemye; ei++)
 	{
 		char	i = ei & 7;
 		auto	e = enemies + i;
 
+		// Check if enemy can be shot
 		if (EnemyFlags[e->type] & ETF_SHOT)
 		{
+			// Loop over list of player shots
 			for(char j=0; j<4; j++)
 			{
 				auto s = shot + j;
 
 				if (s->y != 0)
 				{
+					// Check for vertical collision box
 					if ((char)(s->y - e->y) < 20)
 					{
+						// Check for horizontal collision box
 						if ((unsigned)(s->x - e->x + 7) < EnemyWidth[e->type])
 						{
+							// Shot hits, so remove the shot
 							s->y = 0;
 							vspr_hide(j + 1);
+
+							// Flash the enemy and reduce the hit count
 							e->flash = 4;
 							e->hits--;							
 							if (e->hits == 0)
 							{
+								// Enemy is destroyed
 								score_inc(EnemyScore[e->type]);
+
+								// Check for multi sprite enemy
 								if (e->type == ET_BOSS_MISSILE)
 								{
 									enemies[e->link].type = ET_BOSS_SUPPORT;
@@ -734,6 +759,7 @@ void enemies_check(void)
 							}
 							else if (e->type == ET_TRANSPORTER)
 							{
+								// Hit the coin transporter, add a coint to the game
 								enemies_add(e->x + 12, e->y + 12, ET_COIN, 0, 0);
 							}
 							break;
@@ -778,16 +804,20 @@ static const char FrigateColor[] =
 	{VCOL_RED, VCOL_YELLOW, VCOL_RED, VCOL_RED, 
 	 VCOL_RED, VCOL_PURPLE, VCOL_RED, VCOL_RED };
 
+// Simplified circle animation
 static const signed char sphere_dxy[16] = {3, 2, 1, 0, 0, -1, -2, -3, -3, -2, -1, 0, 0, 1, 2, 3};
 
+// Parabola for ufo entering
 static const char ufo_enter[32] = {
 	#for(i,32) (31 - i) * (31 - i) / 10,
 };
 
+// Parabola for bomber entering
 static const char bomber_enter[64] = {
 	#for(i,64) (63 - i) * (63 - i) / 60,
 };
 
+// Parabola for ufo leaving
 static const char ufo_leave[64] = {
 	#for(i,64) i * i / 16,
 };
@@ -799,9 +829,11 @@ void enemies_move(void)
 	vic.color_border = VCOL_LT_GREEN;
 #endif
 
+	// Delay bullet counter to avoid excessive bullet clustering
 	if (bulld > 0)
 		bulld--;
 
+	// Loop over enemies
 	for(char ei=enemys; ei!=enemye; ei++)
 	{
 		char	i = ei & 7;
@@ -810,12 +842,15 @@ void enemies_move(void)
 		switch (e->type)
 		{
 		case ET_FREE:
+			// Clean up enemy array
 			if (ei==enemys)
 				enemys++;
 			break;
 		case ET_UFO:
 			{
 				int y = 100 + (sintab[(e->phase + 32) & 0x7f] >> 1);
+
+				// Ufo enter and leave animation
 				if (e->cnt < 32)
 					y -= ufo_enter[e->cnt];
 				else if (e->cnt > 192)
@@ -852,18 +887,23 @@ void enemies_move(void)
 			}
 			else
 			{
+				// Vector to player
 				int dx = shipx - e->x;
 				int dy = shipy - e->y;
 				if (dy > 8)
 				{
+					// Player is below gun
 					signed char dir = 0;
 
+					// Check direction left/center/right
 					if (2 * dx + dy < 0)
 						dir = -1;
 					else if (2 * dx - dy > 0)
 						dir = 1;
 
 					vspr_image(i + 8, dir + (SPIMAGE_GUN + 1));
+
+					// Add a random shot in player direction
 					if (!(rand() & 63))
 						bullet_add(e->x + 8 + 12 * dir, e->y + 20, 16 * dir, 2);
 				}
@@ -952,8 +992,11 @@ void enemies_move(void)
 			}
 			else
 			{
+				// Advance particle blob
 				e->x += e->vx;
 				vspr_set(i + 8, e->x - vscreenx, e->y, SPIMAGE_PINGPONG + (e->phase & 3), VCOL_ORANGE);
+
+				// Alternate left/right when hitting transmitter tiles
 				if (e->vx > 0)
 				{
 					if (e->x >= e->p1)
@@ -970,6 +1013,7 @@ void enemies_move(void)
 		case ET_EXPLOSION:
 			if (e->phase == 16)
 			{
+				// Generate a coin if explosion high on screen in 12.5%
 				if (e->y < 160 && !(rand() & 7))
 				{
 					e->type = ET_COIN;
@@ -1157,11 +1201,16 @@ void enemies_move(void)
 			break;
 
 		case ET_POPCORN:
+			// Popcorn aliens just move down
 			e->y += 2;
 			if (e->y < 250)
 			{
 				vspr_move(i + 8, e->x - vscreenx, e->y);
+
+				// Rotation animation
 				vspr_image(i + 8, SPIMAGE_POPCORN + ((e->phase >> 2) & 7));
+
+				// Fire bullets if in second run through
 				if (hardcore && !(rand() & 255))
 					bullet_add(e->x + 8, e->y + 20, 4 * ((rand() & 1) * 2 - 1), 3);
 				e->phase++;
@@ -1272,8 +1321,10 @@ void enemies_move(void)
 
 		case ET_RETRO:
 			{
+				// Ship from behind
 				if (e->cnt > 0)
 				{
+					// Show some entry animation before actually moving up
 					if (e->y > 222)
 						e->y--;
 					e->cnt--;
@@ -1282,6 +1333,7 @@ void enemies_move(void)
 				}
 				else if (e->y > 40)
 				{
+					// Move upwards
 					e->y -= 3;
 					vspr_move(i + 8, e->x - vscreenx, e->y);
 				}
@@ -1864,7 +1916,7 @@ void enemies_move(void)
 	vic.color_border = VCOL_GREEN;
 #endif
 
-
+	// Move bullets
 	for(char i=bulls; i!=bulle; i++)
 	{
 		char j = i & 7;
@@ -1887,6 +1939,7 @@ void enemies_move(void)
 		}
 	}	
 
+	// Update bullet array bounds
 	while (bulls != bulle && bullet[bulls & 7].y == 0)
 		bulls++;
 

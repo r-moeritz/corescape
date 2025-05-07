@@ -72,14 +72,17 @@ const char PausedColors[] = {
 
 void game_pause(void)
 {
+	// Silence during pause
 	music_volume(0);
 
+	// Show PAUSE text using sprites
 	for(char i=0; i<6; i++)
 	{
 		text_sprimage(SPIMAGE_TEXT_1 + i, PausedText[i]);
 		vspr_set(i + 16, 100, 10, SPIMAGE_TEXT_1 + i, VCOL_PURPLE);
 	}
 
+	// Animate paused text
 	char ci = 0;
 	for(;;)
 	{
@@ -100,17 +103,20 @@ void game_pause(void)
 		vspr_update();
 		rirq_sort();
 
+		// Wait for spacebar to continue
 		keyb_poll();
 		if (keyb_key == (KSCAN_SPACE | KSCAN_QUAL_DOWN))
 			break;
 	}
 
+	// Hide pause text sprited
 	for(char i=0; i<6; i++)
 		vspr_hide(i + 16);
 
 	music_volume(15);	
 }
 
+// Mark score grey to signal cheat mode
 void game_cheat(void)
 {
 	cheating = true;
@@ -159,6 +165,7 @@ void game_keyboard(void)
 
 void game_play(void)
 {
+	// Undo all cheat modes at a new start
 	trainer_mode = false;	
 	cheating = false;
 	hardcore = false;
@@ -166,28 +173,34 @@ void game_play(void)
 	restart = false;
 	halfspeed = false;
 
+	// Clear score
 	score_init();
 
+	// Loop through all 16 levels
 	char level = 0;
 	while (level < 16)
 	{
 		level_skip = false;
 		level_retry = false;
 
+		// Check for special level stats
 		hardcore = Levels[level].hardcore;
 		intermission = level & 1;
 
+		// Init level data and music
 		level_init(Levels[level].seq, Levels[level].wave, Levels[level].lsize);
 		music_init(Levels[level].tune);
 		background_init(Levels[level].back);
 
 		music_volume(15);
 
+		// Init of player data and enemies list
 		player_init();
 		enemies_init();
 
 		display_fade_in();
 
+		// Show level string
 		const char * str = Levels[level].name;
 		char i = 0;
 		while (str[i])
@@ -200,6 +213,7 @@ void game_play(void)
 			i++;	
 		}
 
+		// Main game loop
 		for(;;)
 		{
 			game_keyboard();
@@ -232,6 +246,7 @@ void game_play(void)
 
 		if (restart) return;
 
+		// Level end animation
 		for(int i=0; i<15; i++)
 		{
 			music_volume(15 - i);
@@ -262,10 +277,12 @@ void game_play(void)
 
 		music_volume(0);
 
+		// Check for game end
 		if (playerState == PLST_DESTROYED && num_ships == 0)
 		{
 			enemies_init();
 
+			// Display game over text
 			unsigned x = 338;
 			for(char i=0; i<8; i++)
 			{
@@ -311,6 +328,7 @@ void game_play(void)
 			level++;
 	}
 
+	// Check for highscore if not cheating
 	if (!cheating)
 		score_check();
 }

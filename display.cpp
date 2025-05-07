@@ -56,6 +56,7 @@ char tile_cache[8][16];
 #pragma align(tile_cache, 256)
 #pragma bss(bss)
 
+// Copy three screen rows in one loop from tile memory to screen
 void copy_screen_rows3(char * sp, char sx, char sy)
 {
 	sy &= 31;
@@ -72,6 +73,7 @@ void copy_screen_rows3(char * sp, char sx, char sy)
 	}	
 }
 
+// Copy four screen rows in one loop from tile memory to screen
 void copy_screen_rows4(char * sp, char sx, char sy)
 {
 	sy &= 31;
@@ -183,6 +185,8 @@ unsigned levely;
 char screenx, screeny, pscreenx;
 char screeni;
 
+// Rebuild the screen from the tile buffer splitting the work into eight phases
+// during pixel level scrolling
 void rebuild_screen(char phase)
 {
 	char * screen = screeni ? Screen0 : Screen1;
@@ -439,6 +443,7 @@ void level_init(const char * seq, const char * wave, char lsize)
 	levely = lsize * 4;
 	screeny = 0;
 
+	// Expand the tiles needed for this level
 	for(char i=0; i<8; i++)
 	{
 		levely--;
@@ -456,9 +461,11 @@ void level_init(const char * seq, const char * wave, char lsize)
 	pscreenx = screenx = 12;
 	halfspeed = false;
 
+	// Rebuild the full screen by simulating a series of 8 phases
 	for(char i=0; i<8; i++)
 		rebuild_screen(i);
 
+	// Flip screen
 	screeni = 1 - screeni;
 	vic.memptr = (vic.memptr & 0xee) | (screeni << 4);
 	vspr_screen(screeni ? Screen1 : Screen0);
@@ -472,8 +479,10 @@ void level_init(const char * seq, const char * wave, char lsize)
 
 void display_loop(void)
 {
+	// Advance global phase counter
 	phase++;		
 
+	// Phase four checks for scroll direction changes based on ship position
 	if ((phase & 7) == 4)
 	{
 		dx = ndx;
@@ -491,12 +500,14 @@ void display_loop(void)
 		else if (ndx < 0 && screenx == 25)
 			ndx = 0;
 
+		// Cheat horizontal scroll position based on direction
 		if (dx >= 0)
 			px = (px & ~7) | 4;
 		else
 			px = (px & ~7) | 3;
 	}
 
+	// Phase zero checks for new enemies
 	if (!(phase & 7))
 	{
 #if TIME_DEBUG
@@ -505,11 +516,13 @@ void display_loop(void)
 
 	 	if ((screeny & 3) == 2)
 		{
+			// Check for active elements in background row
 			const char * rt = tile_cache[(levely + 1) & 7];
 
 			char si = 0;
 			for(char i=0; i<16; i++)
 			{
+				// Check each tile in row
 				switch (rt[i])
 				{
 				case 20:
@@ -536,6 +549,7 @@ void display_loop(void)
 				}
 			}
 		
+			// Check for new enemy wave
 			if (!(levely & 3))
 				wave_start(level_wave[levely >> 2]);
 		}
@@ -561,6 +575,7 @@ void display_loop(void)
 	vic.color_border = VCOL_LT_BLUE;
 #endif
 
+	// Update score display
 	score_update();
 
 	rirq_wait();
@@ -569,6 +584,8 @@ void display_loop(void)
 	vic.color_border = VCOL_ORANGE;
 #endif
 
+	// Phase zero, update the horizontal pixel level scroll position and flip double
+	// buffer screen
 	if (!(phase & 7))
 	{
 		screeni = 1 - screeni;
@@ -627,6 +644,8 @@ void display_loop(void)
 		}		
 	}
 
+	// Background star field
+
 	static const char yo[4] = {10, 23, 45, 38};
 	static const char xmask[16] = {
 #for(i, 16) 0x55 | (128 >> (i & 6)),
@@ -655,6 +674,7 @@ void display_loop(void)
 
 	music_play();
 
+	// Delay a frame if in half speed cheat mode
 	if (halfspeed)
 	{
 		rirq_wait();
@@ -665,6 +685,7 @@ void display_loop(void)
 #if TIME_DEBUG
 	vic.color_border = VCOL_WHITE;
 #endif
+	// Rebuild one phase of the not visible screen
 	rebuild_screen(phase);
 #if TIME_DEBUG
 	vic.color_border = VCOL_LT_BLUE;
@@ -677,8 +698,12 @@ void display_loop(void)
 		px++;
 }
 
+// Rebuild a tile row of 16 tiles, each 4x4 chars in size into the
+// tile buffer
+
 void tile_redraw(char sy, const char * tis)
 {
+	// Row in rotating tile buffer
 	char y = ((sy - 1) & 7) * 4;
 
 	char * scl0 = tilerows[y & 31];
@@ -688,6 +713,7 @@ void tile_redraw(char sy, const char * tis)
 
 	const char * tp = LevelTiles;
 
+	// Expand tiles
 	char x = 0;
 	for(char i=0; i<16; i++)
 	{
@@ -735,6 +761,8 @@ void tile_redraw(char sy, const char * tis)
 
 	if (y1 < 25)
 	{
+		// Copy segment of tile row onto screen
+
 		char * sp = screen1 + 40 * y1;
 
 		char * scl = tilerows[(y1 + scy) & 31] + screenx;
@@ -771,6 +799,7 @@ void tile_redraw(char sy, const char * tis)
 	}
 }
 
+// Replace a single tile in tile buffer and screen
 void tile_replace(char sx, char sy, char ti)
 {
 	const char * tp = LevelTiles + ti;
@@ -848,6 +877,7 @@ void tile_replace(char sx, char sy, char ti)
 	}
 }
 
+// Check if player/shot collides with a tile
 void tile_collide(char x, char y)
 {
 	char sy = ((y + screeny) >> 2) + 1, sx = x >> 2;

@@ -149,18 +149,25 @@ extern __striped struct Enemy
 	char		phase, cnt, ext, hits, flash, link;
 }	enemies[8];
 
+// Init enemy data structures
 void enemies_init(void);
 
+// Move enemies
 void enemies_move(void);
 
+// Check for enemy response to being hit
 void enemies_check(void);
 
+// Check for enemy collision
 char enemies_collide(char hx, char y);
 
+// Add a new enemy
 char enemies_add(int x, int y, EnemyType type, int p0, int p1);
 
+// Add a new enemy wave
 void wave_start(EnemyWave wave);
 
+// Update wave status
 void wave_loop(void);
 
 #pragma compile("enemies.cpp")

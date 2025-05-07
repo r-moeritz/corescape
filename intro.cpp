@@ -10,6 +10,8 @@ const char IntroFont[] = {
 	#embed ctm_chars lzo "introfont.ctm"
 };
 
+// Tiles for expanding the title scrolling big font
+
 // 3 1     1 0    1
 // 2 0            0
 
@@ -32,6 +34,10 @@ const char IntroFont[] = {
 
 #define LTILE_FULL	LevelTiles[6]
 
+
+// Expand a single font pixel into left most of three columns
+// lmask is the bitmask to the left, mask the bitmask for this column
+// the actual pixel is 2 with 1 and 4 for pixel above and below
 void intro_dot_left(char * dp, char lmask, char mask)
 {
 	if (mask & 2)
@@ -75,6 +81,7 @@ void intro_dot_left(char * dp, char lmask, char mask)
 		dp[0] = dp[40] = dp[80] = 0;		
 }
 
+// Expand a single font pixel into center of three columns
 void intro_dot_center(char * dp, char mask)
 {
 	if (mask & 2)
@@ -93,6 +100,7 @@ void intro_dot_center(char * dp, char mask)
 		dp[0] = dp[40] = dp[80] = 0;		
 }
 
+// Expand a single font pixel into right most of three columns
 void intro_dot_right(char * dp, char rmask, char mask)
 {
 	if (mask & 2)
@@ -136,6 +144,7 @@ void intro_dot_right(char * dp, char rmask, char mask)
 		dp[0] = dp[40] = dp[80] = 0;		
 }
 
+// Expand leftmost column of three column font expansion
 void intro_col_left(char lmask, char mask)
 {
 	char * dp = Screen0 + 39;
@@ -153,6 +162,7 @@ void intro_col_left(char lmask, char mask)
 
 }
 
+// Expand center column of three column font expansion
 void intro_col_center(char mask)
 {
 	char * dp = Screen0 + 39;
@@ -167,6 +177,7 @@ void intro_col_center(char mask)
 	}
 }
 
+// Expand rightmost column of three column font expansion
 void intro_col_right(char rmask, char mask)
 {
 	unsigned	xmask  = mask << 1;
@@ -183,6 +194,7 @@ void intro_col_right(char rmask, char mask)
 	}
 }
 
+// Scroll upper region of screen
 void intro_scroll_0(void)
 {
 	for(char x=0; x<39; x++)
@@ -193,6 +205,8 @@ void intro_scroll_0(void)
 	}
 }
 
+// Scroll lower regions of screen, split into three sections
+// to race the beam
 void intro_scroll_1(void)
 {
 	for(char x=0; x<39; x++)
@@ -226,6 +240,7 @@ static const char ScrollText[] =
 	S"--- CHEATS: \y81S\y82KIP, \y81T\y82RAINER, \y81L\y82IVE, \y81R\y82ETRY, \y81H\y82ALFSPEED \y80"
 	S"--- NO HIGHSCORE WHEN CHEATING :) ---       ";
 
+// Fill intro column with background
 void intro_col_back(char cb)
 {
 	Screen0[40 * 24 + 39] = 0;
@@ -297,6 +312,7 @@ __interrupt void intro_music(void)
 
 void intro_play(void)
 {
+	// Setup screen
 	vic.ctrl1 = VIC_CTRL1_DEN | VIC_CTRL1_RSEL | 3;
 	vic.memptr = 0xce;
 	vspr_screen(Screen0);
@@ -312,6 +328,7 @@ void intro_play(void)
 		}
 	}
 
+	// Expand intro font
 	oscar_expand_lzo(Screen1, IntroFont);
 
 	for(signed char i=63; i>=0; i--)
@@ -326,6 +343,7 @@ void intro_play(void)
 	}
 	display_fade_in();
 
+	// Prepare line with smaller scroll text
 	for(char i=0; i<40; i++)
 	{
 		Screen0[7 * 40 + i] = 0xa0;
@@ -334,6 +352,7 @@ void intro_play(void)
 		Color[8 * 40 + i] = VCOL_ORANGE;
 	}
 
+	// Build interrupts for screen splits
 	rirq_build(&ScrollerTop, 4);
 	rirq_build(&ScrollerBottom, 5);
 	rirq_build(&ScrollerMusic, 1);
@@ -356,9 +375,11 @@ void intro_play(void)
 	rirq_set(18, 50 + 9 * 8 - 1, &ScrollerBottom);
 	rirq_set(19, 232, &ScrollerMusic);
 
+	// Set sprites for sinewave
 	for(char i=0; i<16; i++)
 		vspr_set(i, 24 + 20 * i, 180 + (sintab[i * 13 & 127] >> 1), SPIMAGE_CORVETTE, VCOL_PURPLE);
 
+	// Prepare sprites for highscore
 	for(char i=0; i<6; i++)
 		HighscoreText[i + 2] = highscore[i] + '0';
 
@@ -391,6 +412,7 @@ void intro_play(void)
 
 		const char * cp = StatusFont + 8 * (IntroText[cj] & 0x3f);
 
+		// Build new column mask for big scroller
 		for(char i=0; i<8; i++)
 		{
 			rmask >>= 1;
@@ -398,11 +420,14 @@ void intro_play(void)
 				rmask |= 0x80;
 		}
 
+		// Three steps to add one more font column
 		for(char cc=0; cc<3; cc++)
 		{
+			// Even number frame
 			char j = spi++;
 			spw++;
 
+			// Update sprites
 			char co = HighscoreColor[spw & 7];
 			for(char i=0; i<8; i++)
 				vspr_color(i + 16, co);
@@ -418,10 +443,13 @@ void intro_play(void)
 			vspr_update();
 			rirq_sort();
 
+			// Odd number frame
+
 			intro_back(px); px--;
 			vic.ctrl2 = VIC_CTRL2_MCM;
 			rirq_data(&ScrollerBottom, 2, VIC_CTRL2_MCM);
 
+			// Scroll center text
 			if (si == 0)
 			{
 				for(char i=0; i<39; i++)
@@ -441,6 +469,7 @@ void intro_play(void)
 				si -= 2;
 			rirq_data(&ScrollerTop, 2, si & 7);
 
+			// Add new column for big text
 			switch(cc)
 			{
 			case 0:
@@ -455,6 +484,7 @@ void intro_play(void)
 			}
 			intro_col_back(cb);
 
+			// Next column for center scroll text
 			if (ScrollText[sj] & 0x80)
 			{
 				switch (ScrollText[sj])
@@ -482,6 +512,7 @@ void intro_play(void)
 			Screen0[7 * 40 + 39] = ScrollText[sj] | 0x80;
 			Screen0[8 * 40 + 39] = ScrollText[sj] | 0xc0;
 
+			// Update sprites
 			j = spi++;
 			for(char i=0; i<16; i++)
 			{

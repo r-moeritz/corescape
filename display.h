@@ -71,18 +71,25 @@ extern bool halfspeed;
 #define SPIMAGE_TEXT_1			0xb0
 #define SPIMAGE_TEXT_2			0xb8
 
+// Init the display for game play
 void display_init(void);
 
+// Initialize parallax scrolled background
 void background_init(char bg);
 
+// Initialize level data
 void level_init(const char * seq, const char * wave, char lsize);
 
+// Update screen state in phases
 void rebuild_screen(char phase);
 
+// Main display loop
 void display_loop(void);
 
+// Remove a tile that has been hit
 void tile_remove(char x, char y);
 
+// Fade in/out using colors
 void display_fade_out(void);
 
 void display_fade_in(void);

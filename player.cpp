@@ -36,11 +36,14 @@ void shots_move(void)
 {
 	for(char i=0; i<4; i++)
 	{
+		// Check if shot is active
 		char shy = shot[i].y;
 		if (shy != 0)
 		{
+			// Move shot up
 			shy -= 4;
 
+			// Shot is outside, hide the sprite
 			if (shy < 40)
 			{
 				shy = 0;
@@ -50,6 +53,8 @@ void shots_move(void)
 				vspr_move(i + 1, shot[i].x - vscreenx, shot[i].y);
 
 			shot[i].y = shy;
+
+			// Apply skew left or right
 			shot[i].x += shot[i].dx;
 		}
 	}
@@ -77,6 +82,7 @@ void player_move(void)
 	}
 	else
 	{
+		// Apply ship movement and check for boundaries
 		shipx += 2 * sdx;
 		if (joyy[0] < 0)
 			shipy -= 3;
@@ -96,6 +102,7 @@ void player_move(void)
 
 		if (playerState == PLST_ACTIVE)
 		{
+			// Check for collision with background
 			char	scx0 = (shipx - 24) >> 3;
 			char	scx1 = (shipx - 24) >> 3;
 
@@ -107,6 +114,7 @@ void player_move(void)
 
 			if (char_blocks_player(LevelAttr[scl0[scx0 + 1]]) || char_blocks_player(LevelAttr[scl0[scx1 + 1]]))
 			{
+				// Move player down if colliding
 				shipy = scy * 8 + (phase & 7) + 46;
 				if (shipy > 232)
 				{
@@ -132,6 +140,7 @@ void player_move(void)
 			else if (char_blocks_player(LevelAttr[scl2[scx0 + 1]]) || char_blocks_player(LevelAttr[scl2[scx1 + 1]]))
 				shipy -= 3;
 
+			// Check for collision left or right
 			if (char_blocks_player(LevelAttr[scl0[scx0]]) || char_blocks_player(LevelAttr[scl1[scx1]]))
 			{
 				shipx += 2;
@@ -165,6 +174,7 @@ void player_move(void)
 
 	if (playerState == PLST_ACTIVE)
 	{
+		// Check for collision with enemy shots
 		char hx = (shipx >> 1) + 2;
 		for(char i=bulls; i!=bulle; i++)
 		{
@@ -180,6 +190,7 @@ void player_move(void)
 
 		if (playerState == PLST_ACTIVE)
 		{
+			// Check for collision with enemies or bonus elements
 			char ei = enemies_collide(hx, shipy);
 			if (ei != 0xff)
 			{

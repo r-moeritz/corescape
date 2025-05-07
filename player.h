@@ -23,10 +23,13 @@ extern __striped struct Shot
 }	shot[4];
 
 
+// Init player structs
 void player_init(void);
 
+// Move player
 void player_move(void);
 
+// Move player shots
 void shots_move(void);
 
 #pragma compile("player.cpp")
